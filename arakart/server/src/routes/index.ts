@@ -3,6 +3,7 @@ import { sendSuccess } from '../utils/responseHelper';
 import authRoutes from './auth.routes';
 import categoryRoutes from './category.routes';
 import cityRoutes from './city.routes';
+import providerRoutes from './provider.routes';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/auth', authRoutes);
 // Discovery routes
 router.use('/categories', categoryRoutes);
 router.use('/cities', cityRoutes);
+router.use('/providers', providerRoutes);
 
 export default router;
