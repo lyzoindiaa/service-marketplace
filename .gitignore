@@ -1,0 +1,52 @@
+# ============================================================
+#  AraKart — .gitignore
+# ============================================================
+
+# ── Project management (local only, never commit) ──────────
+/project-plan/
+
+# ── Local research, prototype & client files (kept locally) ─
+/reference/
+*.pdf
+
+# ── Node / npm ─────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
+.pnp
+.pnp.js
+
+# ── Environment & secrets ──────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# ── Build outputs ──────────────────────────────────────────
+/arakart/client/dist/
+/arakart/client/build/
+/arakart/server/dist/
+
+# ── Logs ───────────────────────────────────────────────────
+logs/
+*.log
+
+# ── OS / editor artefacts ──────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Test coverage ──────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── TypeScript build info ──────────────────────────────────
+*.tsbuildinfo
