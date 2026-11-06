@@ -60,6 +60,20 @@ export const toggleSellerLive = async (): Promise<ProviderProfile> => {
   return res.data.data;
 };
 
+export const uploadSellerPhoto = async (file: File): Promise<{ photos: string[] }> => {
+  const formData = new FormData();
+  formData.append('photo', file);
+  const res = await api.post('/sellers/me/photos', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.data;
+};
+
+export const deleteSellerPhoto = async (photoUrl: string): Promise<{ photos: string[] }> => {
+  const res = await api.delete('/sellers/me/photos', { data: { photoUrl } });
+  return res.data.data;
+};
+
 export const getSellerStats = async (): Promise<SellerStatsResponse> => {
   const res = await api.get('/sellers/me/stats');
   return res.data.data;

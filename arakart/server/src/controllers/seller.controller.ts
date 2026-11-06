@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { sellerService } from '../services/seller.service';
+import { uploadPhotoToCloudinary } from '../config/cloudinary';
 import {
   applySellerSchema,
   updateProfileSchema,
@@ -112,5 +113,50 @@ export const getStats = async (req: Request, res: Response): Promise<void> => {
     sendSuccess(res, stats);
   } catch (error: any) {
     sendError(res, error.message || 'Failed to fetch seller statistics', error.statusCode || 500);
+  }
+};
+
+export const uploadPhoto = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      sendError(res, 'Authentication required', 401);
+      return;
+    }
+
+    if (!req.file) {
+      sendError(res, 'No photo uploaded', 400);
+      return;
+    }
+
+    // Upload to Cloudinary
+    const photoUrl = await uploadPhotoToCloudinary(req.file.buffer, req.file.mimetype);
+
+    // Save to provider
+    const photos = await sellerService.addPhoto(userId, photoUrl);
+    sendSuccess(res, { photos }, 'Photo uploaded successfully');
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to upload photo', error.statusCode || 500);
+  }
+};
+
+export const deletePhoto = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      sendError(res, 'Authentication required', 401);
+      return;
+    }
+
+    const { photoUrl } = req.body;
+    if (!photoUrl || typeof photoUrl !== 'string') {
+      sendError(res, 'Photo URL is required', 400);
+      return;
+    }
+
+    const photos = await sellerService.deletePhoto(userId, photoUrl);
+    sendSuccess(res, { photos }, 'Photo deleted successfully');
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to delete photo', error.statusCode || 500);
   }
 };

@@ -33,6 +33,7 @@ export const sendError = (
   const payload: ApiResponse = {
     success: false,
     error,
+    message: error,
     ...(code && { code }),
     ...(details && { details })
   };

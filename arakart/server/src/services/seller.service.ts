@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Provider, IProvider } from '../models/Provider.model';
 import { User } from '../models/User.model';
 import { Lead } from '../models/Lead.model';
+import { deletePhotoFromCloudinary } from '../config/cloudinary';
 
 export class SellerService {
   async applyAsSeller(userId: string, data: any): Promise<any> {
@@ -133,6 +134,40 @@ export class SellerService {
       status: provider.status,
       isLive: provider.isLive,
     };
+  }
+
+  async addPhoto(userId: string, photoUrl: string): Promise<string[]> {
+    const provider = await Provider.findOne({ owner: userId });
+    if (!provider) {
+      const error: any = new Error('No provider profile found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (provider.photos && provider.photos.length >= 6) {
+      const error: any = new Error('Maximum 6 photos allowed per provider');
+      error.statusCode = 422;
+      throw error;
+    }
+
+    provider.photos = [...(provider.photos || []), photoUrl];
+    await provider.save();
+    return provider.photos;
+  }
+
+  async deletePhoto(userId: string, photoUrl: string): Promise<string[]> {
+    const provider = await Provider.findOne({ owner: userId });
+    if (!provider) {
+      const error: any = new Error('No provider profile found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await deletePhotoFromCloudinary(photoUrl);
+
+    provider.photos = (provider.photos || []).filter((p) => p !== photoUrl);
+    await provider.save();
+    return provider.photos;
   }
 }
 
