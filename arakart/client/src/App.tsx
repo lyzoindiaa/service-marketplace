@@ -5,8 +5,9 @@ import { PrivateRoute } from './components/routing/PrivateRoute';
 import { Layout } from './components/layout';
 import { Spinner } from './components/common/Spinner';
 
+import { HomePage } from './pages/HomePage';
+
 // Lazy-loaded pages for high performance code-splitting (FE-012)
-const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
 const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage').then((m) => ({ default: m.SearchResultsPage })));
 const ProviderProfilePage = lazy(() => import('./pages/ProviderProfilePage').then((m) => ({ default: m.ProviderProfilePage })));
 const SellerRegisterPage = lazy(() => import('./pages/SellerRegisterPage').then((m) => ({ default: m.SellerRegisterPage })));
