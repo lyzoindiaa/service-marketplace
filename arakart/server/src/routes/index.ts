@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { sendSuccess } from '../utils/responseHelper';
 import authRoutes from './auth.routes';
+import categoryRoutes from './category.routes';
+import cityRoutes from './city.routes';
 
 const router = Router();
 
@@ -15,5 +17,9 @@ router.get('/health', (_req, res) => {
 
 // Authentication routes
 router.use('/auth', authRoutes);
+
+// Discovery routes
+router.use('/categories', categoryRoutes);
+router.use('/cities', cityRoutes);
 
 export default router;
