@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sendSuccess } from '../utils/responseHelper';
+import authRoutes from './auth.routes';
 
 const router = Router();
 
@@ -11,5 +12,8 @@ router.get('/health', (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Authentication routes
+router.use('/auth', authRoutes);
 
 export default router;
