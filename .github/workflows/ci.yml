@@ -1,0 +1,56 @@
+name: AraKart CI (Manual / Local Only)
+
+# Disabled on push & PR to prevent GitHub token/minute consumption
+# Trigger manually via GitHub Actions UI or execute locally using npm run verify / nektos/act
+on:
+  workflow_dispatch:
+
+
+jobs:
+  quality-gate:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./arakart
+        run: npm ci
+
+      - name: Typecheck & Lint
+        working-directory: ./arakart
+        run: npm run lint
+
+      - name: Run Server Tests
+        working-directory: ./arakart
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://127.0.0.1:27017/arakart_test
+          JWT_SECRET: test_jwt_access_secret_for_ci_pipeline_only_32_chars_min
+          JWT_REFRESH_SECRET: test_jwt_refresh_secret_for_ci_pipeline_only_32_chars_min
+          SMS_PROVIDER: console
+          EMAIL_PROVIDER: console
+        run: npm test --workspace=server
+
+      - name: Run Client Tests
+        working-directory: ./arakart
+        run: npm test --workspace=client
+
+      - name: Build Workspaces
+        working-directory: ./arakart
+        run: npm run build
