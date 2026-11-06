@@ -207,6 +207,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
           <button
             type="button"
             aria-label="favourite"
+            title={isFavourite ? 'Remove from favourites' : 'Save to favourites'}
             onClick={handleFavouriteClick}
             className={`p-2 rounded-full transition-colors shrink-0 ${
               isFavourite
