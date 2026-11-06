@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "db:indexes": "tsx src/scripts/syncIndexes.ts",
     "test": "jest --runInBand --detectOpenHandles",
     "test:coverage": "jest --coverage --runInBand",
     "lint": "tsc --noEmit"

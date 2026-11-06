@@ -35,6 +35,7 @@ const userSchema = new Schema<IUser>(
     },
     email: {
       type: String,
+      unique: true,
       sparse: true,
       lowercase: true,
       trim: true,
@@ -50,6 +51,7 @@ const userSchema = new Schema<IUser>(
     },
     phone: {
       type: String,
+      unique: true,
       sparse: true,
       trim: true,
       match: [/^[6-9]\d{9}$/, 'Invalid 10-digit Indian mobile number'],
@@ -60,6 +62,7 @@ const userSchema = new Schema<IUser>(
     },
     googleId: {
       type: String,
+      unique: true,
       sparse: true,
     },
     avatarUrl: {
