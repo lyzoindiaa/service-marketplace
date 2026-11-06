@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { ToastContainer } from '../common/Toast';
+import { AuthModal } from '../auth';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-1">{children}</main>
       <Footer />
       <ToastContainer />
+      <AuthModal />
     </div>
   );
 };
