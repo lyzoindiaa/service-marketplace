@@ -1,7 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 import i18n from '../lib/i18n';
+
+vi.mock('../services/authService', () => ({
+  refreshSession: vi.fn().mockRejectedValue(new Error('No token')),
+  fetchCurrentUser: vi.fn(),
+  logoutSession: vi.fn(),
+}));
 
 describe('Frontend Scaffold (FE-001)', () => {
   it('renders home page headline with Ara', () => {

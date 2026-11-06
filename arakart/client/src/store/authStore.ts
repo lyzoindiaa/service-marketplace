@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types';
+import { refreshSession, fetchCurrentUser, logoutSession } from '../services/authService';
 
 interface AuthState {
   user: User | null;
@@ -9,6 +10,8 @@ interface AuthState {
   setAuth: (user: User, accessToken: string) => void;
   setToken: (accessToken: string) => void;
   clearAuth: () => void;
+  initAuth: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -18,5 +21,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   setAuth: (user, accessToken) => set({ user, accessToken, isAuthenticated: true }),
   setToken: (accessToken) => set({ accessToken, isAuthenticated: true }),
-  clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+  clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false }),
+  initAuth: async () => {
+    set({ isLoading: true });
+    try {
+      const { accessToken } = await refreshSession();
+      set({ accessToken, isAuthenticated: true });
+      const { user } = await fetchCurrentUser();
+      set({ user, isAuthenticated: true, isLoading: false });
+    } catch {
+      set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+    }
+  },
+  logout: async () => {
+    try {
+      await logoutSession();
+    } finally {
+      set({ user: null, accessToken: null, isAuthenticated: false });
+    }
+  },
 }));

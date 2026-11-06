@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
 import { HomePage } from './pages/HomePage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import { ProviderProfilePage } from './pages/ProviderProfilePage';
@@ -12,6 +13,12 @@ import { PrivateRoute } from './components/routing/PrivateRoute';
 import { Layout } from './components/layout';
 
 export const App: React.FC = () => {
+  const initAuth = useAuthStore((s) => s.initAuth);
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
   return (
     <BrowserRouter>
       <Layout>
