@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-bg text-ink font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-control font-bold text-white bg-brand-gradient shadow-glow hover:brightness-110 active:scale-95 transition-all;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-control font-bold text-ink bg-accent-gradient hover:brightness-105 active:scale-95 transition-all;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-control font-semibold text-ink bg-white border border-surface-line shadow-subtle hover:border-brand hover:text-brand hover:bg-brand-light active:scale-95 transition-all;
+  }
+  .card-bento {
+    @apply bg-white border border-surface-line rounded-card p-6 shadow-card hover:shadow-card-hover transition-all;
+  }
+}
