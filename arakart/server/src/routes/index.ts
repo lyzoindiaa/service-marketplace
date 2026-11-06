@@ -9,6 +9,7 @@ import reportRoutes from './report.routes';
 import leadRoutes from './lead.routes';
 import reviewRoutes from './review.routes';
 import sellerRoutes from './seller.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
@@ -41,5 +42,8 @@ router.use('/reviews', reviewRoutes);
 
 // Seller portal routes
 router.use('/sellers', sellerRoutes);
+
+// Admin portal routes
+router.use('/admin', adminRoutes);
 
 export default router;
