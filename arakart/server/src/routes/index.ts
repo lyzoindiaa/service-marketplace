@@ -4,6 +4,8 @@ import authRoutes from './auth.routes';
 import categoryRoutes from './category.routes';
 import cityRoutes from './city.routes';
 import providerRoutes from './provider.routes';
+import userRoutes from './user.routes';
+import reportRoutes from './report.routes';
 
 const router = Router();
 
@@ -23,5 +25,9 @@ router.use('/auth', authRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/cities', cityRoutes);
 router.use('/providers', providerRoutes);
+
+// User and reporting routes
+router.use('/users', userRoutes);
+router.use('/reports', reportRoutes);
 
 export default router;
