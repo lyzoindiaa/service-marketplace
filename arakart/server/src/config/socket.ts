@@ -39,11 +39,14 @@ export const initSocket = (server: HttpServer): SocketIOServer => {
     const user = (socket as any).user;
     logger.debug(`Authenticated socket connected: ${socket.id} (user: ${user?.userId})`);
 
-    // Automatically join seller room if user is seller with linked sellerId/providerId
+    // Automatically join seller room if user is seller with linked sellerId/providerId or userId
     if (user && user.sellerId) {
       const room = `seller:${user.sellerId}`;
       socket.join(room);
       logger.debug(`Socket ${socket.id} auto-joined room: ${room}`);
+    }
+    if (user && user.role === 'seller' && user.userId) {
+      socket.join(`seller:${user.userId}`);
     }
 
     // Allow admin or verified owner to explicitly join seller room

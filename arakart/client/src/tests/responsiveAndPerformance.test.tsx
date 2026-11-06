@@ -73,7 +73,7 @@ describe('Responsive Polish & Multi-Viewport Testing (FE-012 / QA-004)', () => {
     it('renders search bar with flexible responsive wrapping classes', () => {
       const { container } = render(
         <MemoryRouter>
-          <SearchBar onSearch={vi.fn()} />
+          <SearchBar />
         </MemoryRouter>
       );
 

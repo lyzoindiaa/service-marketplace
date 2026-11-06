@@ -3,6 +3,7 @@ import { generateCode, hashCode, verifyCodeHash } from '../utils/code.utils';
 import { getSmsProvider } from './sms';
 import { getEmailProvider } from './email';
 import { logger } from '../utils/logger';
+import { env } from '../config/env';
 
 const COOLDOWN_MS = 60 * 1000; // 60 seconds
 const EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
@@ -76,12 +77,12 @@ export class VerificationService {
       await getEmailProvider().sendVerification(target, code, purpose);
     }
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const shouldEchoCode = process.env.NODE_ENV !== 'production' && env.CODE_DEV_ECHO !== false;
 
     return {
       success: true,
       message: `Verification code sent to ${target}`,
-      code: isProduction ? '' : code,
+      code: shouldEchoCode ? code : '',
       cooldownSeconds: 60,
     };
   }

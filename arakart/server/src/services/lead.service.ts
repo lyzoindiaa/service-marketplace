@@ -7,6 +7,7 @@ import { emitToSeller } from '../config/socket';
 export interface CreateLeadResult {
   lead: any;
   phone: string;
+  unmaskedPhone: string;
   whatsapp?: string;
 }
 
@@ -73,6 +74,7 @@ export class LeadService {
     return {
       lead: leadJson,
       phone: provider.phone,
+      unmaskedPhone: provider.phone,
       whatsapp: provider.whatsapp || provider.phone,
     };
   }

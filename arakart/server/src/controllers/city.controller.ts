@@ -27,16 +27,19 @@ export const getCityAreas = async (req: Request, res: Response): Promise<void> =
 
 export const createCity = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nameEn, nameHi, slug, isLive } = req.body;
-    if (!nameEn || !nameHi || !slug) {
+    const { nameEn, nameHi, name, slug, isLive } = req.body;
+    const resolvedNameEn = (typeof nameEn === 'string' && nameEn.trim()) || (typeof name === 'string' && name.trim());
+    const resolvedNameHi = (typeof nameHi === 'string' && nameHi.trim()) || resolvedNameEn;
+
+    if (!resolvedNameEn || !resolvedNameHi || !slug || typeof slug !== 'string') {
       sendError(res, 'nameEn, nameHi, and slug are required', 400);
       return;
     }
 
     const city = await discoveryService.createCity({
-      nameEn,
-      nameHi,
-      slug,
+      nameEn: resolvedNameEn,
+      nameHi: resolvedNameHi,
+      slug: slug.trim().toLowerCase(),
       isLive,
     });
     sendSuccess(res, city, 'City created', 201);

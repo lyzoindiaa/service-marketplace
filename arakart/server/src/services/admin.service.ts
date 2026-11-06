@@ -122,7 +122,8 @@ export class AdminService {
       query.role = params.role;
     }
     if (params.search) {
-      const searchRegex = new RegExp(params.search, 'i');
+      const escapedSearch = params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
       query.$or = [{ name: searchRegex }, { email: searchRegex }, { phone: searchRegex }];
     }
 
@@ -153,8 +154,19 @@ export class AdminService {
       throw err;
     }
 
+    if (user.role === 'admin' && suspended) {
+      const err: any = new Error('Cannot suspend an administrator account');
+      err.statusCode = 403;
+      throw err;
+    }
+
     user.suspended = suspended;
     await user.save();
+
+    // If suspending a seller, automatically take their provider listing offline
+    if (suspended) {
+      await Provider.updateMany({ owner: user._id }, { $set: { isLive: false } });
+    }
 
     return user.toJSON();
   }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { validateBody } from '../middleware/validate.middleware';
 import { verifyToken } from '../middleware/auth.middleware';
+import { authCodeLimiter, authVerifyLimiter } from '../middleware/rateLimiter';
 import {
   sendPhoneOtpSchema,
   verifyPhoneOtpSchema,
@@ -16,27 +17,27 @@ import {
 const router = Router();
 
 // Phone OTP
-router.post('/phone/send-otp', validateBody(sendPhoneOtpSchema), (req, res) =>
+router.post('/phone/send-otp', authCodeLimiter, validateBody(sendPhoneOtpSchema), (req, res) =>
   authController.sendPhoneOtp(req, res)
 );
-router.post('/phone/verify-otp', validateBody(verifyPhoneOtpSchema), (req, res) =>
+router.post('/phone/verify-otp', authVerifyLimiter, validateBody(verifyPhoneOtpSchema), (req, res) =>
   authController.verifyPhoneOtp(req, res)
 );
 
 // Email + Password
-router.post('/email/register', validateBody(registerEmailSchema), (req, res) =>
+router.post('/email/register', authCodeLimiter, validateBody(registerEmailSchema), (req, res) =>
   authController.registerEmail(req, res)
 );
-router.post('/email/verify', validateBody(verifyEmailSchema), (req, res) =>
+router.post('/email/verify', authVerifyLimiter, validateBody(verifyEmailSchema), (req, res) =>
   authController.verifyEmail(req, res)
 );
-router.post('/email/login', validateBody(loginEmailSchema), (req, res) =>
+router.post('/email/login', authVerifyLimiter, validateBody(loginEmailSchema), (req, res) =>
   authController.loginEmail(req, res)
 );
-router.post('/email/forgot-password', validateBody(forgotPasswordSchema), (req, res) =>
+router.post('/email/forgot-password', authCodeLimiter, validateBody(forgotPasswordSchema), (req, res) =>
   authController.forgotPassword(req, res)
 );
-router.post('/email/reset-password', validateBody(resetPasswordSchema), (req, res) =>
+router.post('/email/reset-password', authVerifyLimiter, validateBody(resetPasswordSchema), (req, res) =>
   authController.resetPassword(req, res)
 );
 

@@ -89,6 +89,8 @@ export const CategoryCityManager: React.FC<CategoryCityManagerProps> = ({
     try {
       await createAdminCity({
         name: newCityName.trim(),
+        nameEn: newCityName.trim(),
+        nameHi: newCityName.trim(),
         slug: newCitySlug.trim().toLowerCase(),
         state: newCityState.trim(),
       });
@@ -216,8 +218,10 @@ export const CategoryCityManager: React.FC<CategoryCityManagerProps> = ({
           {cities.map((city) => (
             <div key={city.id || city.slug} className="py-2.5 flex items-center justify-between text-xs">
               <div>
-                <span className="font-bold text-slate-900">{city.name}</span>
-                <span className="text-slate-400 text-[11px] ml-1">({city.state})</span>
+                <span className="font-bold text-slate-900">{city.nameEn || city.name}</span>
+                <span className="text-slate-400 text-[11px] ml-1">
+                  ({city.state || city.nameHi || city.slug})
+                </span>
               </div>
               <button
                 type="button"

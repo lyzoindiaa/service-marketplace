@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 
 export const SellerRegisterWizard: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, accessToken, setAuth } = useAuthStore();
   const { addToast } = useUiStore();
 
   const [step, setStep] = useState<number>(1);
@@ -137,7 +137,17 @@ export const SellerRegisterWizard: React.FC = () => {
     };
 
     try {
-      await applySeller(payload);
+      const createdProvider = await applySeller(payload);
+      if (user && setAuth) {
+        setAuth(
+          {
+            ...user,
+            role: 'seller',
+            sellerId: createdProvider?.id || (createdProvider as any)?._id || user.sellerId,
+          },
+          accessToken || ''
+        );
+      }
       setIsSubmitted(true);
       addToast('Application submitted successfully!', 'success');
     } catch (err: any) {

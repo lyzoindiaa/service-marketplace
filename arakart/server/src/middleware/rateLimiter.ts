@@ -17,6 +17,16 @@ export const authCodeLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => {
-    sendError(res, 'Too many verification code attempts, please try again later', 429, 'AUTH_RATE_LIMIT');
+    sendError(res, 'Too many verification code requests, please try again later', 429, 'AUTH_RATE_LIMIT');
+  }
+});
+
+export const authVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 25,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    sendError(res, 'Too many authentication attempts from this IP, please try again later', 429, 'AUTH_RATE_LIMIT');
   }
 });

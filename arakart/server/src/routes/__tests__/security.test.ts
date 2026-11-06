@@ -240,22 +240,32 @@ describe('API Security Test Suite (QA-002)', () => {
     });
   });
 
-  describe('7. Data Privacy & Phone Masking', () => {
-    it('masks phone numbers in public provider search results', async () => {
+  describe('7. Data Privacy & Phone / WhatsApp Masking', () => {
+    it('masks both phone and whatsapp numbers in public provider search and detail results', async () => {
       const res = await request(app).get('/api/v1/providers');
 
       expect(res.status).toBe(200);
       expect(res.body.data.providers.length).toBeGreaterThan(0);
 
       for (const prov of res.body.data.providers) {
-        // Phone must be masked (contains XXXXX or asterisks)
         expect(prov.phone).toMatch(/(?:X{3,}|\*{3,})/);
         expect(prov.phone).not.toBe('9800033344');
         expect(prov.phone).not.toBe('9800055566');
+        if (prov.whatsapp) {
+          expect(prov.whatsapp).toMatch(/(?:X{3,}|\*{3,})/);
+          expect(prov.whatsapp).not.toBe('9800033344');
+        }
+      }
+
+      const detailRes = await request(app).get(`/api/v1/providers/${providerA._id}`);
+      expect(detailRes.status).toBe(200);
+      expect(detailRes.body.data.phone).toMatch(/(?:X{3,}|\*{3,})/);
+      if (detailRes.body.data.whatsapp) {
+        expect(detailRes.body.data.whatsapp).toMatch(/(?:X{3,}|\*{3,})/);
       }
     });
 
-    it('only reveals unmasked phone via click-to-contact lead generation endpoint', async () => {
+    it('only reveals unmasked phone & unmaskedPhone via click-to-contact lead generation endpoint', async () => {
       const res = await request(app)
         .post('/api/v1/leads')
         .set(customerAuth)
@@ -266,6 +276,74 @@ describe('API Security Test Suite (QA-002)', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.data.phone).toBe('9800033344');
+      expect(res.body.data.unmaskedPhone).toBe('9800033344');
+    });
+  });
+
+  describe('8. RegExp Injection / ReDoS & Admin Governance Safeguards', () => {
+    it('safely escapes regex metacharacters in search queries without throwing HTTP 500', async () => {
+      const res = await request(app)
+        .get('/api/v1/providers')
+        .query({ q: '[(*+?^$\\', area: '[invalid(regex' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('rejects NoSQL object payload in abuse report reason with 400 instead of 500', async () => {
+      const res = await request(app)
+        .post('/api/v1/reports')
+        .set(customerAuth)
+        .send({
+          providerId: providerA._id.toString(),
+          reason: { $gt: '' },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('takes seller provider listing offline when seller user is suspended and prevents suspending admins', async () => {
+      // Prevent admin self-suspension / admin suspension
+      const adminSuspendRes = await request(app)
+        .patch(`/api/v1/admin/users/${adminUser._id}/suspend`)
+        .set(adminAuth)
+        .send({ suspended: true });
+      expect(adminSuspendRes.status).toBe(403);
+
+      // Suspend Seller A -> providerA must become isLive: false
+      const sellerSuspendRes = await request(app)
+        .patch(`/api/v1/admin/users/${sellerAUser._id}/suspend`)
+        .set(adminAuth)
+        .send({ suspended: true });
+      expect(sellerSuspendRes.status).toBe(200);
+
+      const updatedProviderA = await Provider.findById(providerA._id);
+      expect(updatedProviderA?.isLive).toBe(false);
+    });
+
+    it('immediately grants seller route access after /sellers/apply using existing customer token', async () => {
+      const newApplicant = await makeUser({ role: 'customer', phone: '9822233344' });
+      const applicantAuth = authHeaderFor(newApplicant);
+
+      const applyRes = await request(app)
+        .post('/api/v1/sellers/apply')
+        .set(applicantAuth)
+        .send({
+          nameEn: 'Instant Role Upgrade Seller',
+          categories: ['electrician'],
+          area: 'Nawada',
+          phone: '9822233344',
+          services: [{ nameEn: 'Wiring', startingPrice: 200 }],
+        });
+      expect(applyRes.status).toBe(201);
+
+      // Using the SAME token (which had role='customer' in JWT payload), /sellers/me must now succeed
+      const meRes = await request(app)
+        .get('/api/v1/sellers/me')
+        .set(applicantAuth);
+      expect(meRes.status).toBe(200);
+      expect(meRes.body.data.nameEn).toBe('Instant Role Upgrade Seller');
     });
   });
 });

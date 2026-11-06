@@ -53,9 +53,10 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
         providerId: provider.id,
         type: 'call',
       });
-      setUnmaskedPhone(res.unmaskedPhone);
+      const revealedPhone = res.unmaskedPhone || (res as any).phone;
+      setUnmaskedPhone(revealedPhone);
       try {
-        window.location.href = `tel:${res.unmaskedPhone}`;
+        window.location.href = `tel:${revealedPhone}`;
       } catch {}
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to initiate call', 'error');

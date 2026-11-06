@@ -131,9 +131,11 @@ export const toggleAdminCategory = async (id: string): Promise<any> => {
 };
 
 export const createAdminCity = async (data: {
-  name: string;
+  name?: string;
+  nameEn?: string;
+  nameHi?: string;
   slug: string;
-  state: string;
+  state?: string;
 }): Promise<any> => {
   const res = await api.post('/cities', data);
   return res.data.data;

@@ -55,9 +55,10 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         providerId: provider.id,
         type: 'call',
       });
-      setUnmaskedPhone(res.unmaskedPhone);
+      const revealedPhone = res.unmaskedPhone || (res as any).phone;
+      setUnmaskedPhone(revealedPhone);
       try {
-        window.location.href = `tel:${res.unmaskedPhone}`;
+        window.location.href = `tel:${revealedPhone}`;
       } catch {
         // Safe for test/jsdom environments
       }

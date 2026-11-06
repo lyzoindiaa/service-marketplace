@@ -23,8 +23,8 @@ export const verifyToken = async (
 
     const payload = verifyAccessToken(token);
 
-    // Ensure user is not suspended
-    const user = await User.findById(payload.userId).select('suspended');
+    // Ensure user is not suspended and hydrate latest role & sellerId from DB
+    const user = await User.findById(payload.userId).select('suspended role sellerId');
     if (!user) {
       sendError(res, 'User account no longer exists', 401);
       return;
@@ -34,7 +34,11 @@ export const verifyToken = async (
       return;
     }
 
-    req.user = payload;
+    req.user = {
+      ...payload,
+      role: user.role || payload.role,
+      sellerId: user.sellerId ? user.sellerId.toString() : payload.sellerId,
+    };
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {

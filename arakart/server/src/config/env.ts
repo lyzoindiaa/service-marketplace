@@ -21,7 +21,14 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().default('AraKart <no-reply@arakart.local>'),
   GOOGLE_CLIENT_ID: z.string().optional(),
-  CODE_DEV_ECHO: z.coerce.boolean().default(true),
+  CODE_DEV_ECHO: z
+    .preprocess((val) => {
+      if (typeof val === 'string') {
+        return val.toLowerCase() === 'true';
+      }
+      return Boolean(val);
+    }, z.boolean())
+    .default(true),
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),

@@ -12,6 +12,10 @@ export const maskPhoneNumber = (phone: string): string => {
   return 'XXXXX XXXXX';
 };
 
+export const escapeRegex = (input: string): string => {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 export interface SearchProvidersResult {
   providers: any[];
   pagination: {
@@ -42,7 +46,7 @@ export class ProviderService {
     };
 
     if (city) {
-      filter.city = { $regex: new RegExp(`^${city.trim()}$`, 'i') };
+      filter.city = { $regex: new RegExp(`^${escapeRegex(city.trim())}$`, 'i') };
     }
 
     if (category) {
@@ -52,11 +56,12 @@ export class ProviderService {
     if (area) {
       const areaTrimmed = area.trim();
       const areaKey = areaTrimmed.toLowerCase();
+      const safeAreaRegex = new RegExp(escapeRegex(areaTrimmed), 'i');
       filter.$or = [
         { areaKey },
         { areasServedKeys: areaKey },
-        { area: { $regex: new RegExp(areaTrimmed, 'i') } },
-        { areasServed: { $regex: new RegExp(areaTrimmed, 'i') } },
+        { area: { $regex: safeAreaRegex } },
+        { areasServed: { $regex: safeAreaRegex } },
       ];
     }
 
@@ -69,7 +74,7 @@ export class ProviderService {
     }
 
     if (q && q.trim()) {
-      const searchTerm = q.trim();
+      const searchTerm = escapeRegex(q.trim());
       const textConditions = [
         { nameEn: { $regex: searchTerm, $options: 'i' } },
         { nameHi: { $regex: searchTerm, $options: 'i' } },
@@ -108,12 +113,13 @@ export class ProviderService {
 
     const pages = Math.ceil(total / limit) || 1;
 
-    // Mask phone numbers in list response
+    // Mask phone and whatsapp numbers in list response
     const providers = docs.map((doc) => {
       const json = doc.toJSON ? doc.toJSON() : doc.toObject();
       return {
         ...json,
         phone: maskPhoneNumber(json.phone),
+        whatsapp: json.whatsapp ? maskPhoneNumber(json.whatsapp) : undefined,
       };
     });
 
@@ -150,6 +156,7 @@ export class ProviderService {
     return {
       ...json,
       phone: maskPhoneNumber(json.phone),
+      whatsapp: json.whatsapp ? maskPhoneNumber(json.whatsapp) : undefined,
     };
   }
 }
