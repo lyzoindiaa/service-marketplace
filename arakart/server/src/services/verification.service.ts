@@ -1,5 +1,7 @@
 import { VerificationCode, VerificationChannel, VerificationPurpose } from '../models/VerificationCode.model';
 import { generateCode, hashCode, verifyCodeHash } from '../utils/code.utils';
+import { getSmsProvider } from './sms';
+import { getEmailProvider } from './email';
 import { logger } from '../utils/logger';
 
 const COOLDOWN_MS = 60 * 1000; // 60 seconds
@@ -67,17 +69,19 @@ export class VerificationService {
       });
     }
 
-    // Delivery via console logger (adapted in INT-006 for live SMS/Email)
+    // Delivery via configured adapter (SMS or Email)
     if (channel === 'phone') {
-      logger.info(`[SMS-DEV-OTP] Sent 6-digit OTP ${code} to mobile +91-${target} (purpose: ${purpose})`);
+      await getSmsProvider().sendOtp(target, code);
     } else {
-      logger.info(`[EMAIL-DEV-CODE] Sent verification code ${code} to ${target} (purpose: ${purpose})`);
+      await getEmailProvider().sendVerification(target, code, purpose);
     }
+
+    const isProduction = process.env.NODE_ENV === 'production';
 
     return {
       success: true,
       message: `Verification code sent to ${target}`,
-      code,
+      code: isProduction ? '' : code,
       cooldownSeconds: 60,
     };
   }
