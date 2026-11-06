@@ -38,7 +38,7 @@ const userSchema = new Schema<IUser>(
       sparse: true,
       lowercase: true,
       trim: true,
-      match: [/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Invalid email format'],
+      match: [/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/, 'Invalid email format'],
     },
     emailVerified: {
       type: Boolean,
