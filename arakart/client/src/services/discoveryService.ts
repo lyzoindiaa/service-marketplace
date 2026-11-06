@@ -14,11 +14,17 @@ export interface CityItem {
   slug: string;
   nameEn: string;
   nameHi: string;
+  stateEn?: string;
+  stateHi?: string;
   isLive: boolean;
+  defaultAreas?: string[];
 }
 
 export interface CityAreasResponse {
   city: string;
+  cityHi?: string;
+  state?: string;
+  stateHi?: string;
   slug: string;
   areas: string[];
 }
@@ -94,7 +100,7 @@ export const fetchCities = async (): Promise<CityItem[]> => {
   return req;
 };
 
-export const fetchCityAreas = async (slug: string = 'ara'): Promise<CityAreasResponse> => {
+export const fetchCityAreas = async (slug: string = 'all'): Promise<CityAreasResponse> => {
   const key = slug.toLowerCase().trim();
   const cached = areasCache.get(key);
   if (!isTestEnv && cached && Date.now() < cached.expiresAt) {

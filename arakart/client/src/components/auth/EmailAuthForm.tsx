@@ -25,6 +25,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
@@ -69,8 +70,20 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) {
-      setError('Please fill in all required fields');
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Please fill in all required fields (Name, Email, and Password)');
+      return;
+    }
+    if (name.trim().length < 2) {
+      setError('Name must be at least 2 characters long');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (phone.trim() && !/^[6-9]\d{9}$/.test(phone.trim())) {
+      setError('Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9');
       return;
     }
     if (password.length < 8) {
@@ -82,14 +95,20 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
     setError(null);
 
     try {
-      const res = await registerEmail(name, email, password);
+      const res = await registerEmail(name.trim(), email.trim(), password, phone.trim() || undefined);
+      if (res.accessToken && res.user) {
+        setAuth(res.user, res.accessToken);
+        addToast(`Account created! Welcome to AraKart, ${res.user.name}.`, 'success');
+        onSuccess();
+        return;
+      }
       if (res.devCode) {
         setDevCode(res.devCode);
       }
       setMode('verify-email');
       addToast('Verification code sent to your email', 'info');
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Registration failed');
+      setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -357,6 +376,15 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           placeholder="your.email@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <Input
+          label="Mobile Number (Optional — for direct service contact)"
+          name="phone"
+          type="tel"
+          placeholder="10-digit mobile number (e.g. 9876543210)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
         />
 
         <Input

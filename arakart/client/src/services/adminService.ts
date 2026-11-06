@@ -136,6 +136,8 @@ export const createAdminCity = async (data: {
   nameHi?: string;
   slug: string;
   state?: string;
+  stateEn?: string;
+  stateHi?: string;
 }): Promise<any> => {
   const res = await api.post('/cities', data);
   return res.data.data;

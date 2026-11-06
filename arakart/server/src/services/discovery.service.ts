@@ -13,8 +13,11 @@ export interface CreateCategoryInput {
 export interface CreateCityInput {
   nameEn: string;
   nameHi: string;
+  stateEn?: string;
+  stateHi?: string;
   slug: string;
   isLive?: boolean;
+  defaultAreas?: string[];
 }
 
 export class DiscoveryService {
@@ -64,8 +67,43 @@ export class DiscoveryService {
   }
 
   // Dynamic Seller Localities Aggregation per City
-  async getCityAreas(slug: string): Promise<{ city: string; slug: string; areas: string[] } | null> {
+  async getCityAreas(slug: string): Promise<{
+    city: string;
+    cityHi: string;
+    state: string;
+    stateHi: string;
+    slug: string;
+    areas: string[];
+  } | null> {
     const cleanSlug = slug.toLowerCase().trim();
+    if (cleanSlug === 'all') {
+      const providers = await Provider.find({
+        status: 'approved',
+        isLive: true,
+      })
+        .select('area areasServed')
+        .lean();
+
+      const areaSet = new Set<string>();
+      providers.forEach((p) => {
+        if (p.area && p.area.trim()) areaSet.add(p.area.trim());
+        if (Array.isArray(p.areasServed)) {
+          p.areasServed.forEach((a) => {
+            if (a && a.trim()) areaSet.add(a.trim());
+          });
+        }
+      });
+
+      return {
+        city: 'All Cities',
+        cityHi: 'सभी शहर',
+        state: 'India',
+        stateHi: 'भारत',
+        slug: 'all',
+        areas: Array.from(areaSet).sort((a, b) => a.localeCompare(b)),
+      };
+    }
+
     const city = await City.findOne({ slug: cleanSlug });
     if (!city) {
       return null;
@@ -81,6 +119,12 @@ export class DiscoveryService {
       .lean();
 
     const areaSet = new Set<string>();
+
+    if (Array.isArray(city.defaultAreas)) {
+      city.defaultAreas.forEach((a) => {
+        if (a && a.trim()) areaSet.add(a.trim());
+      });
+    }
 
     providers.forEach((p) => {
       if (p.area && p.area.trim()) {
@@ -99,6 +143,9 @@ export class DiscoveryService {
 
     return {
       city: city.nameEn,
+      cityHi: city.nameHi || city.nameEn,
+      state: city.stateEn || 'Bihar',
+      stateHi: city.stateHi || 'बिहार',
       slug: city.slug,
       areas,
     };

@@ -30,7 +30,7 @@ export class SellerService {
     const provider = await Provider.create({
       ...data,
       owner: user._id,
-      city: 'ara',
+      city: (data.city || 'ara').toLowerCase().trim(),
       status: 'pending',
       isLive: false,
       verified: false,

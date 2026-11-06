@@ -10,6 +10,8 @@ import leadRoutes from './lead.routes';
 import reviewRoutes from './review.routes';
 import sellerRoutes from './seller.routes';
 import adminRoutes from './admin.routes';
+import blogRoutes from './blog.routes';
+import offerRoutes from './offer.routes';
 
 const router = Router();
 
@@ -44,6 +46,14 @@ router.use('/reviews', reviewRoutes);
 router.use('/sellers', sellerRoutes);
 
 // Admin portal routes
-router.use('/admin', adminRoutes);
+router.use('/admin', highValueAdminRoutes(adminRoutes));
+
+// Dynamic Blogs & Service Offers routes
+router.use('/blogs', blogRoutes);
+router.use('/offers', offerRoutes);
+
+function highValueAdminRoutes(r: Router) {
+  return r;
+}
 
 export default router;

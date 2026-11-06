@@ -30,7 +30,7 @@ describe('SellerRegisterPage (FE-008)', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Register Your Business in Ara/i)).toBeInTheDocument();
+      expect(screen.getByText(/Register Your Business/i)).toBeInTheDocument();
       expect(screen.getByText(/Step 1 of 4/i)).toBeInTheDocument();
     });
   });

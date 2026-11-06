@@ -5,6 +5,7 @@ export interface ApplySellerPayload {
   nameEn: string;
   nameHi?: string;
   categories: string[];
+  city?: string;
   area: string;
   areasServed?: string[];
   phone: string;

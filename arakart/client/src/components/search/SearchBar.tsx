@@ -16,7 +16,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   className = '',
 }) => {
   const navigate = useNavigate();
-  const selectedCity = useUiStore((s) => s.selectedCity);
+  const { selectedCity, selectedCityName, selectedCityNameHi, language } = useUiStore();
+  const isSpecificCity = Boolean(selectedCity && selectedCity !== 'all');
+  const cityLabel =
+    language === 'hi' ? selectedCityNameHi || selectedCityName : selectedCityName;
 
   const [q, setQ] = useState(initialQuery);
   const [area, setArea] = useState(initialArea);
@@ -72,7 +75,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           className="w-full text-xs sm:text-sm text-slate-700 bg-transparent focus:outline-none cursor-pointer"
           aria-label="Filter by locality"
         >
-          <option value="">All Ara Localities</option>
+          <option value="">
+            {isSpecificCity
+              ? language === 'hi'
+                ? `सभी ${cityLabel} इलाके`
+                : `All ${cityLabel} Localities`
+              : language === 'hi'
+              ? 'सभी इलाके'
+              : 'All Localities'}
+          </option>
           {areas.map((loc) => (
             <option key={loc} value={loc}>
               {loc}

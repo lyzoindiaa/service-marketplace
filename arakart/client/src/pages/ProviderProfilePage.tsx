@@ -16,15 +16,19 @@ import { ReviewItem } from '../components/provider/ReviewItem';
 import { ReviewForm } from '../components/provider/ReviewForm';
 import { ContactBox } from '../components/provider/ContactBox';
 import { GalleryGrid } from '../components/provider/GalleryGrid';
+import { Button } from '../components/common/Button';
+import { fetchPublicOffers, applyOffer, OfferItem } from '../services/offerService';
 import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 
 export const ProviderProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuthStore();
-  const { language, addToast } = useUiStore();
+  const { language, addToast, openAuthModal } = useUiStore();
 
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
+  const [providerOffers, setProviderOffers] = useState<OfferItem[]>([]);
+  const [applyingOfferId, setApplyingOfferId] = useState<string | null>(null);
   const [reviewsData, setReviewsData] = useState<ProviderReviewsResponse | null>(null);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,10 +41,38 @@ export const ProviderProfilePage: React.FC = () => {
     try {
       const data = await getProviderById(id);
       setProvider(data);
+      try {
+        const offersList = await fetchPublicOffers({ sellerId: id });
+        setProviderOffers(offersList);
+      } catch {
+        setProviderOffers([]);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Provider not found');
     }
   }, [id]);
+
+  const handleApplyProviderOffer = async (offer: OfferItem) => {
+    if (!isAuthenticated) {
+      addToast('Please sign in to apply this service offer', 'info');
+      openAuthModal();
+      return;
+    }
+    try {
+      setApplyingOfferId(offer.id);
+      const res = await applyOffer(offer.id);
+      addToast(
+        `Offer Applied! Claim Code: ${res.application.claimCode} for ${res.application.serviceTitleEn}`,
+        'success'
+      );
+      const updatedOffers = await fetchPublicOffers({ sellerId: id });
+      setProviderOffers(updatedOffers);
+    } catch (err: any) {
+      addToast(err.response?.data?.message || 'Failed to apply offer', 'error');
+    } finally {
+      setApplyingOfferId(null);
+    }
+  };
 
   // Load reviews
   const loadReviews = useCallback(
@@ -153,8 +185,8 @@ export const ProviderProfilePage: React.FC = () => {
               {language === 'hi' ? 'होम' : 'Home'}
             </Link>
             <span>/</span>
-            <Link to="/search?city=ara" className="hover:text-indigo-600 transition-colors">
-              Ara
+            <Link to="/search" className="hover:text-indigo-600 transition-colors">
+              Services
             </Link>
             <span>/</span>
             {provider.categories && provider.categories.length > 0 && (
@@ -205,6 +237,11 @@ export const ProviderProfilePage: React.FC = () => {
                         ✓ Verified Business
                       </Badge>
                     )}
+                    {providerOffers.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800">
+                        🔥 {providerOffers.length} Offer{providerOffers.length > 1 ? 's' : ''} Available
+                      </span>
+                    )}
                   </div>
 
                   {/* Rating + Reviews + Experience */}
@@ -235,7 +272,6 @@ export const ProviderProfilePage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span className="font-semibold text-slate-800">{provider.area}</span>
-                    <span className="text-slate-400">· Ara, Bhojpur</span>
                   </div>
                 </div>
               </div>
@@ -252,6 +288,63 @@ export const ProviderProfilePage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Active Service Offers Section */}
+            {providerOffers.length > 0 && (
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/80 p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-extrabold text-amber-950 flex items-center gap-2">
+                    🔥 {language === 'hi' ? 'सक्रिय सेवा ऑफ़र' : 'Active Service Offers'}
+                  </h3>
+                  <Link
+                    to="/offers"
+                    className="text-xs font-bold text-brand-primary hover:underline"
+                  >
+                    View All Platform Offers →
+                  </Link>
+                </div>
+
+                <div className="space-y-3">
+                  {providerOffers.map((offer) => (
+                    <div
+                      key={offer.id}
+                      className="bg-white rounded-xl border border-amber-200/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-sm font-extrabold text-slate-900">
+                            {offer.titleEn}
+                          </span>
+                          <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                            {offer.discountPercent}% OFF
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-brand-primary mb-1">
+                          🛠️ Service: {offer.serviceTitleEn} &bull; Offer Price:{' '}
+                          <strong className="text-emerald-600">₹{offer.offerPrice}</strong>{' '}
+                          <span className="line-through text-slate-400">
+                            ₹{offer.originalPrice}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {offer.scheduleType === 'date_range'
+                            ? `📅 ${offer.startDate} to ${offer.endDate} (Work Hours: ${offer.workHoursStart}–${offer.workHoursEnd})`
+                            : `⚡ Single Day: ${offer.singleDate} (Hour Slot: ${offer.slotStartHour}–${offer.slotEndHour})`}
+                        </p>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        isLoading={applyingOfferId === offer.id}
+                        onClick={() => handleApplyProviderOffer(offer)}
+                      >
+                        {offer.hasCustomerApplied ? '✓ Applied' : 'Apply Offer'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Services Catalogue Table */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">

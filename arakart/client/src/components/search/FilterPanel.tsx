@@ -82,10 +82,10 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           </select>
         </div>
 
-        {/* Ara Locality Filter */}
+        {/* Locality Filter */}
         <div>
           <label htmlFor="filter-area" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            {language === 'hi' ? 'आरा क्षेत्र' : 'Ara Locality'}
+            {language === 'hi' ? 'क्षेत्र / इलाका' : 'Locality'}
           </label>
           <select
             id="filter-area"
@@ -94,7 +94,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             onChange={(e) => onAreaChange(e.target.value)}
             className="w-full text-sm rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium"
           >
-            <option value="">{language === 'hi' ? 'पूरा आरा शहर' : 'All Ara Localities'}</option>
+            <option value="">{language === 'hi' ? 'सभी इलाके' : 'All Localities'}</option>
             {areas.map((area) => (
               <option key={area} value={area}>
                 {area}

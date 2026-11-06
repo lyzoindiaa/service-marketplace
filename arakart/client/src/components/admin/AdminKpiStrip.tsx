@@ -17,7 +17,7 @@ export const AdminKpiStrip: React.FC<AdminKpiStripProps> = ({ stats }) => {
     {
       label: 'Approved Providers',
       value: stats.approvedSellers,
-      sub: 'Live in Ara',
+      sub: 'Live on Platform',
       icon: '🏪',
       color: 'from-emerald-500 to-teal-600',
     },

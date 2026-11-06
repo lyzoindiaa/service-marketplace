@@ -71,7 +71,7 @@ export const CatalogueEditor: React.FC<CatalogueEditorProps> = ({
             Services & Rates Catalogue
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Prices shown on your public listing to customers across Ara.
+            Prices shown on your public listing to customers.
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={handleAdd}>

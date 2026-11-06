@@ -42,7 +42,7 @@ export const ReviewsManager: React.FC<ReviewsManagerProps> = ({
         <span className="text-4xl mb-3 block">⭐</span>
         <h3 className="text-base font-bold text-slate-900 mb-1">No Reviews Yet</h3>
         <p className="text-xs text-slate-500 max-w-sm mx-auto">
-          Reviews from customers you have served in Ara will appear here. You can respond directly to thank them or provide follow-up assistance.
+          Reviews from customers you have served will appear here. You can respond directly to thank them or provide follow-up assistance.
         </p>
       </div>
     );

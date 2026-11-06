@@ -1,16 +1,16 @@
 {
   "brand": "AraKart",
-  "tagline": "Hyperlocal Services Marketplace for Ara",
+  "tagline": "Hyperlocal Services Marketplace",
   "home": "Home",
   "browse": "Find Services",
   "becomeSeller": "Become a Seller",
   "login": "Login / Sign Up",
   "logout": "Logout",
-  "heroH": "Find trusted local service providers in",
+  "heroH": "Find trusted local service providers",
   "heroP": "Mechanics, electricians, plumbers, AC repair, cabs and more. Contact them directly. Free for everyone.",
   "search": "Search",
   "whatNeed": "What do you need? e.g. mechanic",
-  "allAreas": "All localities in Ara",
+  "allAreas": "All Localities",
   "popular": "Popular:",
   "providers": "Providers",
   "cities": "Cities",
@@ -34,7 +34,7 @@
   "filterBy": "Filter by",
   "sortBy": "Sort by",
   "noSavedProviders": "No Saved Providers",
-  "exploreServices": "Explore Services in Ara",
+  "exploreServices": "Explore Services",
   "removeFromFavourites": "Remove from favourites",
   "saveToFavourites": "Save to favourites"
 }

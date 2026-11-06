@@ -2,6 +2,7 @@ import React from 'react';
 
 export type BadgeVariant =
   | 'verified'
+  | 'primary'
   | 'open'
   | 'closed'
   | 'pending'
@@ -23,6 +24,7 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variantStyles: Record<BadgeVariant, string> = {
     verified: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    primary: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     open: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     closed: 'bg-rose-50 text-rose-700 border-rose-200',
     pending: 'bg-amber-50 text-amber-700 border-amber-200',

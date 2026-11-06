@@ -68,3 +68,29 @@ export const getProviderById = async (id: string): Promise<ProviderProfile> => {
   const res = await api.get(`/providers/${id}`);
   return res.data.data;
 };
+
+export interface PublicStatsResponse {
+  verifiedProvidersCount: number;
+  categoriesCount: number;
+  avgRating: number;
+  totalReviews: number;
+  recentReviews: Array<{
+    id: string;
+    customerName: string;
+    rating: number;
+    comment: string;
+    sellerReply?: string;
+    providerId: string;
+    providerNameEn: string;
+    providerNameHi?: string;
+    providerArea?: string;
+    createdAt: string;
+  }>;
+}
+
+export const fetchPublicStats = async (city?: string): Promise<PublicStatsResponse> => {
+  const res = await api.get('/providers/public-stats', {
+    params: city ? { city } : undefined,
+  });
+  return res.data.data;
+};

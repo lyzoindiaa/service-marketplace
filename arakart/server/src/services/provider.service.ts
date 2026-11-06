@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import { Provider, IProvider } from '../models/Provider.model';
+import { Category } from '../models/Category.model';
+import { Review } from '../models/Review.model';
 import { SearchProvidersQuery } from '../validators/provider.validators';
 
 export const maskPhoneNumber = (phone: string): string => {
@@ -157,6 +159,70 @@ export class ProviderService {
       ...json,
       phone: maskPhoneNumber(json.phone),
       whatsapp: json.whatsapp ? maskPhoneNumber(json.whatsapp) : undefined,
+    };
+  }
+
+  async getPublicStats(city?: string): Promise<{
+    verifiedProvidersCount: number;
+    categoriesCount: number;
+    avgRating: number;
+    totalReviews: number;
+    recentReviews: any[];
+  }> {
+    const providerFilter: Record<string, any> = {
+      status: 'approved',
+      isLive: true,
+    };
+    if (city && city.trim() && city.trim().toLowerCase() !== 'all') {
+      providerFilter.city = { $regex: new RegExp(`^${escapeRegex(city.trim())}$`, 'i') };
+    }
+
+    const [verifiedProvidersCount, categoriesCount, cityProviders] = await Promise.all([
+      Provider.countDocuments(providerFilter),
+      Category.countDocuments({ enabled: true }),
+      Provider.find(providerFilter).select('_id nameEn nameHi area city').lean(),
+    ]);
+
+    const providerIds = cityProviders.map((p) => p._id);
+    const reviewFilter = providerIds.length > 0 ? { provider: { $in: providerIds } } : {};
+
+    const [totalReviews, ratingAgg, recentReviewDocs] = await Promise.all([
+      Review.countDocuments(reviewFilter),
+      Review.aggregate([
+        { $match: reviewFilter },
+        { $group: { _id: null, avg: { $avg: '$rating' } } },
+      ]),
+      Review.find(reviewFilter)
+        .populate('provider', 'nameEn nameHi area city')
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean(),
+    ]);
+
+    const avgRating =
+      ratingAgg.length > 0 && ratingAgg[0].avg
+        ? Number(ratingAgg[0].avg.toFixed(1))
+        : 0;
+
+    const recentReviews = recentReviewDocs.map((r: any) => ({
+      id: r._id.toString(),
+      customerName: r.customerName || 'Verified Customer',
+      rating: r.rating,
+      comment: r.comment,
+      sellerReply: r.sellerReply,
+      providerId: r.provider?._id?.toString() || '',
+      providerNameEn: r.provider?.nameEn || 'Local Professional',
+      providerNameHi: r.provider?.nameHi || r.provider?.nameEn || '',
+      providerArea: r.provider?.area || '',
+      createdAt: r.createdAt,
+    }));
+
+    return {
+      verifiedProvidersCount,
+      categoriesCount,
+      avgRating,
+      totalReviews,
+      recentReviews,
     };
   }
 }

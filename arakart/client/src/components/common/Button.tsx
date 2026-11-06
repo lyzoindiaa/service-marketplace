@@ -8,6 +8,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  isLoading?: boolean;
+  fullWidth?: boolean;
   icon?: React.ReactNode;
 }
 
@@ -16,13 +18,16 @@ export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   loading = false,
+  isLoading = false,
+  fullWidth = false,
   disabled = false,
   icon,
   className = '',
   ...props
 }) => {
+  const isBusy = loading || isLoading;
   const baseClasses =
-    'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
+    'inline-flex items-center justify-center font-medium rounded-xl whitespace-nowrap shrink-0 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
 
   const sizeClasses = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
@@ -45,11 +50,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${className}`}
-      disabled={disabled || loading}
+      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${fullWidth ? 'w-full' : ''} ${className}`}
+      disabled={disabled || isBusy}
       {...props}
     >
-      {loading ? (
+      {isBusy ? (
         <>
           <Spinner size={size === 'lg' ? 'md' : 'sm'} color="currentColor" />
           <span>{children}</span>

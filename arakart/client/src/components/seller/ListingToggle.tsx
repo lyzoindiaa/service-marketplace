@@ -33,7 +33,7 @@ export const ListingToggle: React.FC<ListingToggleProps> = ({
       const updated = await toggleSellerLive();
       onToggled(updated.isLive);
       addToast(
-        updated.isLive ? 'Your business listing is now LIVE in Ara!' : 'Your business listing is now paused (offline).',
+        updated.isLive ? 'Your business listing is now LIVE!' : 'Your business listing is now paused (offline).',
         'success'
       );
     } catch (err: any) {
@@ -66,7 +66,7 @@ export const ListingToggle: React.FC<ListingToggleProps> = ({
         {status === 'pending'
           ? 'Pending Approval'
           : isLive
-          ? 'Listing is Live in Ara'
+          ? 'Listing is Live'
           : 'Listing Paused'}
       </span>
     </div>

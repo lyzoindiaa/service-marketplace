@@ -16,7 +16,7 @@ export const SearchResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { isAuthenticated, user } = useAuthStore();
-  const { language, addToast } = useUiStore();
+  const { language, selectedCity, addToast } = useUiStore();
 
   // URL state
   const q = searchParams.get('q') || '';
@@ -48,13 +48,13 @@ export const SearchResultsPage: React.FC = () => {
     setSearchInput(q);
   }, [q]);
 
-  // Load categories and dynamic seller-defined areas for Ara
+  // Load categories and dynamic seller-defined areas for selectedCity
   useEffect(() => {
     const loadMetadata = async () => {
       try {
         const [cats, cityAreas] = await Promise.all([
           fetchCategories(),
-          fetchCityAreas('ara'),
+          fetchCityAreas(selectedCity),
         ]);
         setCategories(cats);
         setAreas(cityAreas.areas || []);
@@ -63,7 +63,7 @@ export const SearchResultsPage: React.FC = () => {
       }
     };
     loadMetadata();
-  }, []);
+  }, [selectedCity]);
 
   // Sync user favourites
   useEffect(() => {
@@ -97,7 +97,7 @@ export const SearchResultsPage: React.FC = () => {
         sort: sort as any,
         page,
         limit: 10,
-        city: 'ara',
+        city: selectedCity,
       });
 
       setProviders(res.providers || []);
@@ -108,7 +108,7 @@ export const SearchResultsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [q, category, area, minRating, verifiedOnly, sort, page]);
+  }, [q, category, area, minRating, verifiedOnly, sort, page, selectedCity]);
 
   useEffect(() => {
     executeSearch();
@@ -204,11 +204,11 @@ export const SearchResultsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16">
       {/* Top Search & Filter Bar */}
-      <div className="bg-white border-b border-slate-200 sticky top-16 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div className="bg-white border-b border-slate-200 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             {/* Quick search form */}
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-xl">
+            <form onSubmit={handleSearchSubmit} className="relative w-full md:flex-1 md:max-w-xl">
               <input
                 type="text"
                 value={searchInput}
@@ -216,12 +216,12 @@ export const SearchResultsPage: React.FC = () => {
                 placeholder={
                   language === 'hi'
                     ? 'सेवा, प्रदाता या क्षेत्र खोजें...'
-                    : 'Search electrician, AC repair, plumber in Ara...'
+                    : 'Search electrician, AC repair, plumber...'
                 }
-                className="w-full pl-10 pr-24 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
+                className="w-full pl-10 pr-24 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
               />
               <svg
-                className="w-4 h-4 text-slate-400 absolute left-3.5 top-3"
+                className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -235,18 +235,18 @@ export const SearchResultsPage: React.FC = () => {
               </svg>
               <button
                 type="submit"
-                className="absolute right-1 top-1 bottom-1 px-4 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                className="absolute right-1.5 top-1.5 bottom-1.5 px-4 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
               >
                 {language === 'hi' ? 'खोजें' : 'Search'}
               </button>
             </form>
 
             {/* Mobile filter button & Desktop Sort dropdown */}
-            <div className="flex items-center justify-between md:justify-end gap-3">
+            <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
               <button
                 type="button"
                 onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-                className="md:hidden flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700"
+                className="md:hidden flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -263,24 +263,24 @@ export const SearchResultsPage: React.FC = () => {
       {/* Main Content Layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         {/* Results Heading */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               {q
                 ? `${totalProviders} ${totalProviders === 1 ? 'provider' : 'providers'} found for "${q}"`
-                : `${totalProviders} ${totalProviders === 1 ? 'provider' : 'providers'} found in Ara`}
+                : `${totalProviders} ${totalProviders === 1 ? 'provider' : 'providers'} found`}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               {language === 'hi'
-                ? 'आरा शहर के सत्यापित और भरोसेमंद स्थानीय सेवा प्रदाता'
-                : 'Verified & reliable local service professionals across Ara, Bhojpur'}
+                ? 'सत्यापित और भरोसेमंद स्थानीय सेवा प्रदाता'
+                : 'Verified & reliable local service professionals'}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
           {/* Desktop Filter Panel (Left sidebar) */}
-          <aside className="hidden md:block md:col-span-1 sticky top-36">
+          <aside className="hidden md:block md:col-span-1 sticky top-24">
             <FilterPanel
               selectedCategory={category}
               selectedArea={area}
@@ -336,7 +336,7 @@ export const SearchResultsPage: React.FC = () => {
               <div className="py-20 flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-100">
                 <Spinner size="lg" color="indigo" />
                 <p className="text-sm font-medium text-slate-500 mt-4">
-                  {language === 'hi' ? 'प्रदाता लोड हो रहे हैं...' : 'Loading providers in Ara...'}
+                  {language === 'hi' ? 'प्रदाता लोड हो रहे हैं...' : 'Loading service providers...'}
                 </p>
               </div>
             ) : error ? (
@@ -349,7 +349,7 @@ export const SearchResultsPage: React.FC = () => {
             ) : providers.length === 0 ? (
               <EmptyState
                 title="No service providers found"
-                description="We couldn't find any service providers matching your current search criteria in Ara. Try clearing or relaxing some filters."
+                description="We couldn't find any service providers matching your current search criteria. Try clearing or relaxing some filters."
                 actionLabel="Clear all filters"
                 onAction={handleResetFilters}
               />

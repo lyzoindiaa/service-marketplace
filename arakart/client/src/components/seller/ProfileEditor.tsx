@@ -126,7 +126,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="edit-area" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-            Primary Area in Ara
+            Primary Area / Locality
           </label>
           <Input
             id="edit-area"
@@ -205,7 +205,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
               Work & Shop Photos ({photos.length}/6)
             </h4>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Upload photos of your storefront, equipment, or recent service work in Ara (Max 2MB each, JPEG/PNG/WebP).
+              Upload photos of your storefront, equipment, or recent service work (Max 2MB each, JPEG/PNG/WebP).
             </p>
           </div>
           <input

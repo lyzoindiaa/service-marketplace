@@ -30,7 +30,7 @@ export const CategoryCityManager: React.FC<CategoryCityManagerProps> = ({
 
   const [newCityName, setNewCityName] = useState('');
   const [newCitySlug, setNewCitySlug] = useState('');
-  const [newCityState, setNewCityState] = useState('Bihar');
+  const [newCityState, setNewCityState] = useState('');
   const [isSubmittingCity, setIsSubmittingCity] = useState(false);
 
   const handleToggleCat = async (id: string) => {
@@ -93,6 +93,8 @@ export const CategoryCityManager: React.FC<CategoryCityManagerProps> = ({
         nameHi: newCityName.trim(),
         slug: newCitySlug.trim().toLowerCase(),
         state: newCityState.trim(),
+        stateEn: newCityState.trim(),
+        stateHi: newCityState.trim(),
       });
       addToast('City created successfully!', 'success');
       setNewCityName('');
@@ -113,7 +115,7 @@ export const CategoryCityManager: React.FC<CategoryCityManagerProps> = ({
           <h3 className="text-base font-bold text-slate-900">
             Service Categories ({categories.length})
           </h3>
-          <span className="text-xs text-slate-400">Available across Ara</span>
+          <span className="text-xs text-slate-400">Platform-wide</span>
         </div>
 
         <form onSubmit={handleAddCategory} className="p-4 rounded-xl bg-slate-50 border border-slate-200/60 space-y-3">

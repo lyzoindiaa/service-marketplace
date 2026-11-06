@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import '../../lib/i18n';
 import { HomePage } from '../HomePage';
 import * as discoveryService from '../../services/discoveryService';
+import * as providerService from '../../services/providerService';
 
 const mockNavigate = vi.fn();
 
@@ -16,6 +17,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../../services/discoveryService');
+vi.mock('../../services/providerService');
 
 describe('HomePage Component (FE-005)', () => {
   const sampleCategories = [
@@ -30,9 +32,27 @@ describe('HomePage Component (FE-005)', () => {
     vi.clearAllMocks();
     vi.mocked(discoveryService.fetchCategories).mockResolvedValue(sampleCategories);
     vi.mocked(discoveryService.fetchCityAreas).mockResolvedValue({
-      city: 'Ara',
-      slug: 'ara',
+      city: 'All Cities',
+      slug: 'all',
       areas: sampleAreas,
+    });
+    vi.mocked(providerService.fetchPublicStats).mockResolvedValue({
+      verifiedProvidersCount: 14,
+      categoriesCount: 8,
+      avgRating: 4.9,
+      totalReviews: 25,
+      recentReviews: [
+        {
+          id: 'rev1',
+          customerName: 'Ankit Verma',
+          rating: 5,
+          comment: 'Excellent electrician in Nawada!',
+          providerId: 'prov1',
+          providerNameEn: 'Sharma Electricals',
+          providerArea: 'Nawada',
+          createdAt: new Date().toISOString(),
+        },
+      ],
     });
   });
 

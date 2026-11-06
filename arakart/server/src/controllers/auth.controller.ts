@@ -64,11 +64,26 @@ export class AuthController {
 
   async registerEmail(req: Request, res: Response): Promise<void> {
     try {
-      const { name, email, password } = req.body;
-      const result = await authService.registerEmail(name, email, password);
-      sendSuccess(res, { user: result.user, message: result.message }, 'Registration initiated', 201);
+      const { name, email, password, phone, directLogin } = req.body;
+      const result = await authService.registerEmail(name, email, password, phone, directLogin);
+      if (result.refreshToken) {
+        setRefreshTokenCookie(res, result.refreshToken);
+      }
+      sendSuccess(
+        res,
+        {
+          user: result.user,
+          ...(result.accessToken ? { accessToken: result.accessToken } : {}),
+          message: result.message,
+        },
+        result.accessToken ? 'Account created successfully' : 'Registration initiated',
+        201
+      );
     } catch (err: any) {
-      const status = err.message?.includes('already exists') ? 409 : 400;
+      const status =
+        err.message?.includes('already exists') || err.message?.includes('already linked')
+          ? 409
+          : 400;
       sendError(res, err.message || 'Registration failed', status);
     }
   }

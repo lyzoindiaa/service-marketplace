@@ -29,12 +29,20 @@ export const verifyPhoneOtp = async (
 export const registerEmail = async (
   name: string,
   email: string,
-  password: string
-): Promise<{ user: User; message: string; devCode?: string }> => {
-  const res = await api.post('/auth/email/register', { name, email, password });
+  password: string,
+  phone?: string
+): Promise<{ user: User; accessToken?: string; message: string; devCode?: string }> => {
+  const res = await api.post('/auth/email/register', {
+    name,
+    email,
+    password,
+    directLogin: true,
+    ...(phone ? { phone } : {}),
+  });
   return {
     user: res.data.data.user,
-    message: res.data.data.message || 'Verification code sent',
+    accessToken: res.data.data.accessToken,
+    message: res.data.data.message || 'Account created successfully',
     devCode: res.data.data?.code,
   };
 };

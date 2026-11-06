@@ -33,7 +33,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         <p className="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
           {language === 'hi'
             ? 'केवल सत्यापित ग्राहक ही आराकार्ट पर स्थानीय प्रदाताओं की समीक्षा लिख सकते हैं।'
-            : 'Only verified customers can share ratings & reviews to help fellow Ara residents.'}
+            : 'Only verified customers can share ratings & reviews to help fellow residents.'}
         </p>
         <Button
           variant="primary"
@@ -158,7 +158,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
           placeholder={
             language === 'hi'
               ? 'इस सेवा प्रदाता के साथ अपने अनुभव को साझा करें...'
-              : 'Share your experience with this service provider in Ara...'
+              : 'Share your experience with this service provider...'
           }
           className="w-full text-sm rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none font-medium"
         />

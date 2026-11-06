@@ -30,6 +30,13 @@ export const registerEmailSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters long')
     .max(100, 'Password is too long'),
+  phone: z
+    .string()
+    .trim()
+    .regex(phoneRegex, 'Please provide a valid 10-digit Indian phone number (e.g. 9876543210)')
+    .optional()
+    .or(z.literal('')),
+  directLogin: z.boolean().optional(),
 });
 
 export const verifyEmailSchema = z.object({

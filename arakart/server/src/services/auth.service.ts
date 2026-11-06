@@ -120,13 +120,23 @@ export class AuthService {
   async registerEmail(
     name: string,
     email: string,
-    password: string
-  ): Promise<{ user: IUser; code: string; message: string }> {
+    password: string,
+    phone?: string,
+    directLogin?: boolean
+  ): Promise<{ user: IUser; code: string; accessToken?: string; refreshToken?: string; message: string }> {
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone ? phone.replace(/\D/g, '').slice(-10) : undefined;
     const existing = await User.findOne({ email: cleanEmail });
 
     if (existing && existing.emailVerified) {
       throw new Error('An account with this email address already exists. Please log in.');
+    }
+
+    if (cleanPhone) {
+      const existingPhone = await User.findOne({ phone: cleanPhone, _id: { $ne: existing?._id } });
+      if (existingPhone) {
+        throw new Error('This phone number is already linked to another account.');
+      }
     }
 
     const passwordHash = await hashPassword(password);
@@ -135,6 +145,8 @@ export class AuthService {
     if (existing && !existing.emailVerified) {
       existing.name = name;
       existing.passwordHash = passwordHash;
+      if (cleanPhone) existing.phone = cleanPhone;
+      if (directLogin) existing.emailVerified = true;
       if (!existing.authMethods.includes('email')) {
         existing.authMethods.push('email');
       }
@@ -144,12 +156,23 @@ export class AuthService {
       user = await User.create({
         name,
         email: cleanEmail,
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
         passwordHash,
         role: 'customer',
-        emailVerified: false,
+        emailVerified: Boolean(directLogin),
         phoneVerified: false,
         authMethods: ['email'],
       });
+    }
+
+    if (directLogin) {
+      const tokens = await this.generateTokensForUser(user);
+      return {
+        user,
+        code: '',
+        ...tokens,
+        message: 'Account created successfully.',
+      };
     }
 
     const { code } = await verificationService.sendCode('email', cleanEmail, 'verify_email');

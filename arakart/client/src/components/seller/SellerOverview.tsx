@@ -21,7 +21,7 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
       value: stats.profileViews,
       icon: '👁️',
       color: 'from-blue-500 to-indigo-600',
-      description: 'Local customers in Ara',
+      description: 'Local customer profile views',
     },
     {
       title: 'Call Inquiries',
@@ -66,7 +66,7 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
             </Badge>
           </div>
           <p className="text-xs text-slate-500">
-            Primary Area: <strong className="text-slate-700">{profile.area}, Ara</strong> ·
+            Primary Area: <strong className="text-slate-700">{profile.area}</strong> ·
             Starting from <strong className="text-indigo-600">₹{profile.fromPrice}</strong>
           </p>
         </div>
@@ -105,9 +105,9 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
       <div className="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex items-start gap-3.5 text-xs text-indigo-900">
         <span className="text-xl">💡</span>
         <div className="space-y-1">
-          <h4 className="font-bold text-indigo-950">How to get more customer calls in Ara</h4>
+          <h4 className="font-bold text-indigo-950">How to get more customer calls</h4>
           <p className="text-indigo-800/90 leading-relaxed">
-            Keep your services catalogue updated with competitive starting rates. Promptly answer incoming customer calls from Ara numbers to maintain a 5-star reputation!
+            Keep your services catalogue updated with competitive starting rates. Promptly answer incoming customer calls to maintain a 5-star reputation!
           </p>
         </div>
       </div>

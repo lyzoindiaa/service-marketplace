@@ -19,8 +19,9 @@ import { LeadsTable, LeadItem } from '../components/seller/LeadsTable';
 import { CatalogueEditor } from '../components/seller/CatalogueEditor';
 import { ReviewsManager } from '../components/seller/ReviewsManager';
 import { ProfileEditor } from '../components/seller/ProfileEditor';
+import { SellerOffersManager } from '../components/seller/SellerOffersManager';
 
-type DashboardTab = 'overview' | 'leads' | 'catalogue' | 'reviews' | 'profile';
+type DashboardTab = 'overview' | 'leads' | 'catalogue' | 'offers' | 'reviews' | 'profile';
 
 export const SellerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -194,10 +195,10 @@ export const SellerDashboardPage: React.FC = () => {
         </div>
         <h2 className="text-2xl font-bold text-ink mb-2">No Seller Account Found</h2>
         <p className="text-ink-muted mb-6">
-          You have not registered as a service provider in Ara yet. Register today to reach hundreds of local customers!
+          You have not registered as a service provider yet. Register today to reach hundreds of local customers!
         </p>
         <Button onClick={() => navigate('/register-seller')}>
-          Register as Ara Provider
+          Register as Service Provider
         </Button>
       </div>
     );
@@ -227,7 +228,7 @@ export const SellerDashboardPage: React.FC = () => {
             </Badge>
           </div>
           <p className="text-ink-muted text-sm mt-1">
-            {profile.area}, Ara &bull; {profile.phone} &bull; Joined as Verified Merchant
+            {profile.area} &bull; {profile.phone} &bull; Joined as Verified Merchant
           </p>
         </div>
 
@@ -288,6 +289,17 @@ export const SellerDashboardPage: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('offers')}
+          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'offers'
+              ? 'bg-brand-primary text-white shadow-sm'
+              : 'text-ink-muted hover:text-ink hover:bg-slate-100'
+          }`}
+        >
+          🔥 Service Offers
+        </button>
+
+        <button
           onClick={() => setActiveTab('reviews')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'reviews'
@@ -338,6 +350,12 @@ export const SellerDashboardPage: React.FC = () => {
               initialServices={profile.services || []}
               onCatalogueUpdated={handleCatalogueUpdated}
             />
+          </div>
+        )}
+
+        {activeTab === 'offers' && (
+          <div className="max-w-4xl">
+            <SellerOffersManager services={profile.services || []} />
           </div>
         )}
 

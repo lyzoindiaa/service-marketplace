@@ -5,8 +5,11 @@ export interface ICity extends Document {
   _id: Types.ObjectId;
   nameEn: string;
   nameHi: string;
+  stateEn: string;
+  stateHi: string;
   slug: string;
   isLive: boolean;
+  defaultAreas: string[];
   createdAt: Date;
 }
 
@@ -22,6 +25,16 @@ const citySchema = new Schema<ICity>(
       required: true,
       trim: true,
     },
+    stateEn: {
+      type: String,
+      default: 'Bihar',
+      trim: true,
+    },
+    stateHi: {
+      type: String,
+      default: 'बिहार',
+      trim: true,
+    },
     slug: {
       type: String,
       required: true,
@@ -33,6 +46,10 @@ const citySchema = new Schema<ICity>(
       type: Boolean,
       default: false,
       index: true,
+    },
+    defaultAreas: {
+      type: [String],
+      default: [],
     },
   },
   {

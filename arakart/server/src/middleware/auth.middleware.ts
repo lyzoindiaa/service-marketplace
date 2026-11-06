@@ -49,6 +49,33 @@ export const verifyToken = async (
   }
 };
 
+export const optionalAuth = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      if (token) {
+        const payload = verifyAccessToken(token);
+        const user = await User.findById(payload.userId).select('suspended role sellerId');
+        if (user && !user.suspended) {
+          req.user = {
+            ...payload,
+            role: user.role || payload.role,
+            sellerId: user.sellerId ? user.sellerId.toString() : payload.sellerId,
+          };
+        }
+      }
+    }
+  } catch {
+    // Ignore invalid/expired token on optional-auth routes
+  }
+  next();
+};
+
 export const requireRole = (...roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {

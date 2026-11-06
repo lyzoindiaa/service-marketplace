@@ -10,10 +10,12 @@ const config: Config = {
       colors: {
         brand: {
           DEFAULT: '#4f46e5',
+          primary: '#4f46e5',
           dark: '#3730a3',
           light: '#eef2ff',
           glow: 'rgba(79, 70, 229, 0.28)',
         },
+        'border-light': '#e2e8f0',
         accent: {
           DEFAULT: '#f59e0b',
           dark: '#b45309',

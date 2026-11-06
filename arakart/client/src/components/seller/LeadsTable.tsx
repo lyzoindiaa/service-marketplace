@@ -40,7 +40,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onStatusUpdated }
         <span className="text-4xl mb-3 block">📭</span>
         <h3 className="text-base font-bold text-slate-900 mb-1">No Leads Yet</h3>
         <p className="text-xs text-slate-500 max-w-sm mx-auto">
-          Customer calls and WhatsApp inquiry clicks will appear here in real-time as local residents discover your business in Ara.
+          Customer calls and WhatsApp inquiry clicks will appear here in real-time as local residents discover your business.
         </p>
       </div>
     );
@@ -78,7 +78,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onStatusUpdated }
               return (
                 <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-5 py-4 font-bold text-slate-900">
-                    {lead.customerName || 'Ara Customer'}
+                    {lead.customerName || 'Verified Customer'}
                   </td>
                   <td className="px-5 py-4">
                     {lead.type === 'call' ? (

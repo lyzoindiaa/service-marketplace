@@ -20,16 +20,16 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div
-      className={`flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto rounded-2xl bg-white border border-slate-100 shadow-sm ${className}`}
+      className={`w-full flex flex-col items-center justify-center py-12 px-6 sm:p-12 text-center rounded-2xl bg-white border border-slate-200/80 shadow-xs ${className}`}
     >
       <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mb-4">
         {icon || '🔍'}
       </div>
 
-      <h3 className="text-lg font-bold text-slate-900 mb-1.5">{title}</h3>
+      <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">{title}</h3>
 
       {description && (
-        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+        <p className="text-sm text-slate-500 mb-6 leading-relaxed max-w-md mx-auto">
           {description}
         </p>
       )}

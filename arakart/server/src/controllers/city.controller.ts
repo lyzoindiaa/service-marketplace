@@ -27,9 +27,14 @@ export const getCityAreas = async (req: Request, res: Response): Promise<void> =
 
 export const createCity = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nameEn, nameHi, name, slug, isLive } = req.body;
+    const { nameEn, nameHi, name, state, stateEn, stateHi, slug, isLive, defaultAreas } = req.body;
     const resolvedNameEn = (typeof nameEn === 'string' && nameEn.trim()) || (typeof name === 'string' && name.trim());
     const resolvedNameHi = (typeof nameHi === 'string' && nameHi.trim()) || resolvedNameEn;
+    const resolvedStateEn =
+      (typeof stateEn === 'string' && stateEn.trim()) ||
+      (typeof state === 'string' && state.trim()) ||
+      'Bihar';
+    const resolvedStateHi = (typeof stateHi === 'string' && stateHi.trim()) || resolvedStateEn;
 
     if (!resolvedNameEn || !resolvedNameHi || !slug || typeof slug !== 'string') {
       sendError(res, 'nameEn, nameHi, and slug are required', 400);
@@ -39,8 +44,11 @@ export const createCity = async (req: Request, res: Response): Promise<void> => 
     const city = await discoveryService.createCity({
       nameEn: resolvedNameEn,
       nameHi: resolvedNameHi,
+      stateEn: resolvedStateEn,
+      stateHi: resolvedStateHi,
       slug: slug.trim().toLowerCase(),
       isLive,
+      ...(Array.isArray(defaultAreas) ? { defaultAreas } : {}),
     });
     sendSuccess(res, city, 'City created', 201);
   } catch (error: any) {

@@ -9,9 +9,22 @@ export const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, clearAuth } = useAuthStore();
-  const { openAuthModal, selectedCity, setLanguage } = useUiStore();
+  const {
+    openAuthModal,
+    openCityModal,
+    selectedCityName,
+    selectedCityNameHi,
+    selectedStateName,
+    selectedStateNameHi,
+    setLanguage,
+  } = useUiStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const cityDisplay =
+    i18n.language === 'hi' ? selectedCityNameHi || selectedCityName : selectedCityName;
+  const stateDisplay =
+    i18n.language === 'hi' ? selectedStateNameHi || selectedStateName : selectedStateName;
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'hi' : 'en';
@@ -26,49 +39,69 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 transition-shadow duration-200">
+    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 transition-shadow duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
           {/* Logo & City Badge */}
-          <div className="flex items-center gap-3 sm:gap-6">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
+          <div className="flex items-center gap-2 sm:gap-5 min-w-0 shrink-0">
+            <Link to="/" className="flex items-center gap-2 group shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform shrink-0">
                 A
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
+                <span className="font-extrabold text-lg sm:text-2xl tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors whitespace-nowrap">
                   {t('brand')}
                 </span>
               </div>
             </Link>
 
-            {/* City indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
+            {/* Desktop Interactive City & State Selector */}
+            <button
+              type="button"
+              onClick={openCityModal}
+              aria-label="Select city and state"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-xs font-semibold text-slate-700 hover:text-indigo-700 transition-all whitespace-nowrap shrink-0"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span className="capitalize">{selectedCity === 'ara' ? 'Ara' : selectedCity}</span>
-            </div>
+              <span>{cityDisplay}</span>
+              <span className="text-slate-400 font-medium">, {stateDisplay}</span>
+              <span className="text-[10px] text-slate-400">▾</span>
+            </button>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 shrink-0">
             <Link
               to="/"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
             >
               {t('home')}
             </Link>
             <Link
               to="/search"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
             >
               {t('browse')}
             </Link>
             <Link
+              to="/offers"
+              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1 whitespace-nowrap"
+            >
+              <span>🔥</span>
+              <span>{i18n.language === 'hi' ? 'ऑफ़र' : 'Offers'}</span>
+            </Link>
+            <Link
+              to="/blogs"
+              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
+            >
+              {i18n.language === 'hi' ? 'ब्लॉग' : 'Blogs'}
+            </Link>
+            <Link
               to="/register-seller"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1.5"
+              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
               <span>{t('becomeSeller')}</span>
               <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-100 text-amber-800">
@@ -78,33 +111,34 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Right Action Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Language Switch Toggle */}
             <button
               onClick={toggleLanguage}
               aria-label="Switch language"
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="px-2 sm:px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1 whitespace-nowrap shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
-              <span className="text-sm">🌐</span>
-              <span>{i18n.language === 'en' ? 'हिन्दी' : 'English'}</span>
+              <span className="text-xs sm:text-sm">🌐</span>
+              <span className="sm:hidden">{i18n.language === 'en' ? 'हिं' : 'EN'}</span>
+              <span className="hidden sm:inline">{i18n.language === 'en' ? 'हिन्दी' : 'English'}</span>
             </button>
 
             {/* User Profile Chip or Login Button */}
             {user ? (
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:p-1.5 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   aria-expanded={userDropdownOpen}
                 >
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm border border-indigo-200">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm border border-indigo-200 shrink-0">
                     {user.name ? user.name[0].toUpperCase() : 'U'}
                   </div>
                   <span className="hidden sm:inline-block text-sm font-semibold text-slate-800 max-w-[120px] truncate">
                     {user.name}
                   </span>
                   <svg
-                    className="w-4 h-4 text-slate-400"
+                    className="w-4 h-4 text-slate-400 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth="2"
@@ -164,18 +198,20 @@ export const Header: React.FC = () => {
             ) : (
               <Button
                 variant="primary"
-                size="md"
+                size="sm"
                 onClick={openAuthModal}
                 aria-label="Login"
+                className="!px-2.5 !py-1.5 sm:!text-sm sm:!px-4 sm:!py-2 whitespace-nowrap shrink-0"
               >
-                {t('login')}
+                <span className="sm:hidden">{i18n.language === 'en' ? 'Login' : 'लॉग इन'}</span>
+                <span className="hidden sm:inline">{t('login')}</span>
               </Button>
             )}
 
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="md:hidden p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               aria-label="Open mobile menu"
             >
               <svg
@@ -197,7 +233,7 @@ export const Header: React.FC = () => {
 
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-100 py-4 space-y-2">
+          <div className="md:hidden border-t border-slate-100 py-3 space-y-1.5">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
@@ -213,6 +249,20 @@ export const Header: React.FC = () => {
               {t('browse')}
             </Link>
             <Link
+              to="/offers"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+            >
+              🔥 {i18n.language === 'hi' ? 'सेवा ऑफ़र' : 'Service Offers'}
+            </Link>
+            <Link
+              to="/blogs"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+            >
+              📰 {i18n.language === 'hi' ? 'ब्लॉग और गाइड' : 'Blogs & Guides'}
+            </Link>
+            <Link
               to="/register-seller"
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
@@ -221,6 +271,25 @@ export const Header: React.FC = () => {
             </Link>
           </div>
         )}
+      </div>
+
+      {/* Mobile Location Sub-bar Strip (< 640px) — Zero Overflow */}
+      <div className="sm:hidden bg-slate-50 border-t border-slate-100 px-4 py-1.5">
+        <button
+          type="button"
+          onClick={openCityModal}
+          className="w-full flex items-center justify-between text-xs font-semibold text-slate-700"
+        >
+          <span className="flex items-center gap-1.5 truncate">
+            <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500 shrink-0" />
+            <span className="truncate">
+              {i18n.language === 'hi' ? 'स्थान:' : 'Serving:'} {cityDisplay}, {stateDisplay}
+            </span>
+          </span>
+          <span className="text-indigo-600 font-bold shrink-0 ml-2">
+            {i18n.language === 'hi' ? 'बदलें ▾' : 'Change ▾'}
+          </span>
+        </button>
       </div>
     </header>
   );

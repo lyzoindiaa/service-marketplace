@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html,
   body {
-    @apply bg-surface-bg text-ink font-sans;
+    @apply bg-surface-bg text-ink font-sans overflow-x-hidden max-w-full;
   }
 }
 

@@ -16,9 +16,9 @@ vi.mock('../services/discoveryService', () => ({
 }));
 
 describe('Frontend Scaffold (FE-001)', () => {
-  it('renders home page headline with Ara', () => {
+  it('renders home page headline', () => {
     render(<App />);
-    expect(screen.getByText(/Hyperlocal Services Platform — Ara/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hyperlocal Services Platform/i)).toBeInTheDocument();
   });
 
   it('resolves i18n translations in English and Hindi', () => {

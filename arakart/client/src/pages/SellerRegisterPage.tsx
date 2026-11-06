@@ -10,13 +10,13 @@ export const SellerRegisterPage: React.FC = () => {
       <div className="max-w-2xl mx-auto text-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           {language === 'hi'
-            ? 'आरा में अपना व्यवसाय पंजीकृत करें'
-            : 'Register Your Business in Ara'}
+            ? 'अपना व्यवसाय पंजीकृत करें'
+            : 'Register Your Business'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-md mx-auto">
           {language === 'hi'
-            ? 'आरा के हजारों स्थानीय ग्राहकों से सीधे कॉल और व्हाट्सएप पर काम पाएं। कोई कमीशन नहीं।'
-            : 'Get direct customer leads across Ara via Phone and WhatsApp with zero commission.'}
+            ? 'हजारों स्थानीय ग्राहकों से सीधे कॉल और व्हाट्सएप पर काम पाएं। कोई कमीशन नहीं।'
+            : 'Get direct customer leads via Phone and WhatsApp with zero commission.'}
         </p>
       </div>
 

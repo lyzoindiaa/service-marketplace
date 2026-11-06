@@ -86,7 +86,7 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
           : `91${phoneForWa.replace(/^0+/, '')}`;
 
       const prefilledText = encodeURIComponent(
-        `Hi ${provider.nameEn}, I found your listing on AraKart and would like to hire your service in ${provider.area}, Ara.`
+        `Hi ${provider.nameEn}, I found your listing on AraKart and would like to hire your service in ${provider.area}.`
       );
 
       window.open(
@@ -219,7 +219,7 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
       {/* Service Area Pill Details */}
       <div className="pt-4 border-t border-slate-100">
         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-          {language === 'hi' ? 'सेवा क्षेत्र' : 'Areas Served in Ara'}
+          {language === 'hi' ? 'सेवा क्षेत्र' : 'Areas Served'}
         </h4>
         <div className="flex flex-wrap gap-1.5">
           <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold text-xs border border-indigo-100">
@@ -297,7 +297,7 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
                 rows={3}
                 value={reportDetails}
                 onChange={(e) => setReportDetails(e.target.value)}
-                placeholder="Provide any specific details to assist our Ara moderation team..."
+                placeholder="Provide any specific details to assist our moderation team..."
                 className="w-full text-sm rounded-xl border border-slate-200 p-2.5 bg-slate-50 resize-none font-medium"
               />
             </div>

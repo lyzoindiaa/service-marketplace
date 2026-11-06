@@ -10,6 +10,7 @@ export const applySellerSchema = z.object({
   nameEn: z.string().trim().min(3, 'Business name must be at least 3 characters').max(100),
   nameHi: z.string().trim().max(100).optional(),
   categories: z.array(z.string()).min(1, 'Please select at least 1 category'),
+  city: z.string().trim().optional(),
   area: z.string().trim().min(2, 'Primary area locality is required'),
   areasServed: z.array(z.string().trim()).optional(),
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit Indian mobile number required'),

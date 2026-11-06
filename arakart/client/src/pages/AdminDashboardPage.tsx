@@ -26,8 +26,10 @@ import { UserManagement } from '../components/admin/UserManagement';
 import { CategoryCityManager } from '../components/admin/CategoryCityManager';
 import { ReportsManager } from '../components/admin/ReportsManager';
 import { ActivityFeed } from '../components/admin/ActivityFeed';
+import { AdminBlogsManager } from '../components/admin/AdminBlogsManager';
+import { AdminOffersManager } from '../components/admin/AdminOffersManager';
 
-type AdminTab = 'overview' | 'pending' | 'users' | 'categories' | 'reports';
+type AdminTab = 'overview' | 'pending' | 'users' | 'categories' | 'blogs' | 'offers' | 'reports';
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -119,11 +121,11 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-bold text-ink">AraKart Admin Console</h1>
             <span className="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-bold">
-              Ara Master
+              Platform Master
             </span>
           </div>
           <p className="text-ink-muted text-sm mt-1">
-            Platform governance, seller approvals, and marketplace telemetry for Ara, Bihar.
+            Platform governance, seller approvals, and marketplace telemetry.
           </p>
         </div>
       </div>
@@ -187,6 +189,28 @@ export const AdminDashboardPage: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('offers')}
+          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+            activeTab === 'offers'
+              ? 'bg-brand-primary text-white shadow-sm'
+              : 'text-ink-muted hover:text-ink hover:bg-slate-100'
+          }`}
+        >
+          🔥 Seller Offers
+        </button>
+
+        <button
+          onClick={() => setActiveTab('blogs')}
+          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+            activeTab === 'blogs'
+              ? 'bg-brand-primary text-white shadow-sm'
+              : 'text-ink-muted hover:text-ink hover:bg-slate-100'
+          }`}
+        >
+          📰 Blogs Manager
+        </button>
+
+        <button
           onClick={() => setActiveTab('reports')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap relative ${
             activeTab === 'reports'
@@ -211,7 +235,7 @@ export const AdminDashboardPage: React.FC = () => {
               <div className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
                 <h3 className="text-base font-bold text-slate-900 mb-2">Marketplace Summary</h3>
                 <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                  AraKart currently operates in Ara with active service categories across Nawada, Anaith, Zero Mile, and surrounding areas.
+                  AraKart operates across multiple cities and states with active service categories and verified local providers.
                 </p>
                 <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-100 text-center">
                   <div>
@@ -272,6 +296,10 @@ export const AdminDashboardPage: React.FC = () => {
             onRefresh={loadAdminData}
           />
         )}
+
+        {activeTab === 'offers' && <AdminOffersManager />}
+
+        {activeTab === 'blogs' && <AdminBlogsManager />}
 
         {activeTab === 'reports' && (
           <ReportsManager

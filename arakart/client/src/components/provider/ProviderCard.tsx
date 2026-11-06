@@ -92,7 +92,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         : `91${phoneForWa.replace(/^0+/, '')}`;
 
       const prefilledText = encodeURIComponent(
-        `Hi ${provider.nameEn}, I found your profile on AraKart and would like to inquire about your services in ${provider.area}, Ara.`
+        `Hi ${provider.nameEn}, I found your profile on AraKart and would like to inquire about your services in ${provider.area}.`
       );
 
       window.open(`https://wa.me/${cleanPhone}?text=${prefilledText}`, '_blank', 'noopener,noreferrer');
@@ -194,7 +194,6 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                   />
                 </svg>
                 <span className="font-medium text-slate-700">{provider.area}</span>
-                <span className="text-slate-400">· Ara</span>
                 {provider.areasServed && provider.areasServed.length > 1 && (
                   <span className="text-[11px] text-slate-400 truncate">
                     (+{provider.areasServed.length - 1} nearby)

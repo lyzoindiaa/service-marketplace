@@ -33,3 +33,13 @@ export const getProviderById = async (req: Request, res: Response): Promise<void
     sendError(res, error.message || 'Failed to fetch provider profile', error.statusCode || 500);
   }
 };
+
+export const getPublicStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const city = typeof req.query.city === 'string' ? req.query.city : undefined;
+    const stats = await providerService.getPublicStats(city);
+    sendSuccess(res, stats);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to fetch public platform stats', 500);
+  }
+};

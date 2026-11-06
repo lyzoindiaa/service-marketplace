@@ -10,7 +10,7 @@ import { useUiStore } from '../../store/uiStore';
 
 export const SellerRegisterWizard: React.FC = () => {
   const { user, accessToken, setAuth } = useAuthStore();
-  const { addToast } = useUiStore();
+  const { selectedCity, addToast } = useUiStore();
 
   const [step, setStep] = useState<number>(1);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -47,16 +47,20 @@ export const SellerRegisterWizard: React.FC = () => {
       try {
         const [cats, cityAreas] = await Promise.all([
           fetchCategories(),
-          fetchCityAreas('ara'),
+          fetchCityAreas(selectedCity),
         ]);
         setCategories(cats);
-        setAvailableAreas(cityAreas.areas || ['Nawada', 'Anaith', 'Zero Mile', 'Gopali Chowk', 'Judge Bazar']);
+        setAvailableAreas(
+          cityAreas.areas?.length
+            ? cityAreas.areas
+            : ['Nawada', 'Anaith', 'Zero Mile', 'Gopali Chowk', 'Judge Bazar']
+        );
       } catch (err) {
         console.error('Failed to load categories/areas', err);
       }
     };
     loadData();
-  }, []);
+  }, [selectedCity]);
 
   const toggleCategory = (slug: string) => {
     if (selectedCategories.includes(slug)) {
@@ -103,7 +107,7 @@ export const SellerRegisterWizard: React.FC = () => {
         return;
       }
       if (!area) {
-        setErrorMessage('Please choose your primary Ara locality');
+        setErrorMessage('Please choose your primary locality');
         return;
       }
       setStep(3);
@@ -125,6 +129,7 @@ export const SellerRegisterWizard: React.FC = () => {
       nameEn: nameEn.trim(),
       nameHi: nameHi.trim() || undefined,
       categories: selectedCategories,
+      city: selectedCity,
       area,
       areasServed: areasServed.length > 0 ? areasServed : [area],
       phone: phone.replace(/\D/g, ''),
@@ -175,7 +180,7 @@ export const SellerRegisterWizard: React.FC = () => {
         </h2>
         <p className="text-sm text-slate-600 mb-6 leading-relaxed">
           Thank you for registering <strong className="text-slate-800">{nameEn}</strong>. Our
-          local Ara verification team will verify your details and approve your listing shortly.
+          verification team will verify your details and approve your listing shortly.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -227,7 +232,7 @@ export const SellerRegisterWizard: React.FC = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900">Contact Information</h3>
           <p className="text-xs text-slate-500">
-            Customers in Ara will contact you directly on these numbers.
+            Customers will contact you directly on these numbers.
           </p>
 
           <div>
@@ -319,7 +324,7 @@ export const SellerRegisterWizard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="primary-locality" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Primary Locality (Ara) *
+                Primary Locality *
               </label>
               <select
                 id="primary-locality"
@@ -388,7 +393,7 @@ export const SellerRegisterWizard: React.FC = () => {
               rows={2}
               value={bioEn}
               onChange={(e) => setBioEn(e.target.value)}
-              placeholder="Tell customers about your specialties, tools, and experience in Ara..."
+              placeholder="Tell customers about your specialties, tools, and experience..."
               className="w-full text-sm rounded-xl border border-slate-200 p-2.5 bg-slate-50 font-medium resize-none"
             />
           </div>
@@ -470,7 +475,7 @@ export const SellerRegisterWizard: React.FC = () => {
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
               <span className="text-slate-500 font-semibold">Primary Locality:</span>
-              <span className="font-bold text-slate-900">{area}, Ara</span>
+              <span className="font-bold text-slate-900">{area}</span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
               <span className="text-slate-500 font-semibold">Phone:</span>

@@ -61,7 +61,7 @@ export const CustomerFavouritesPage: React.FC = () => {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-ink">My Saved Providers</h1>
           <p className="text-ink-muted text-sm mt-1">
-            Quick access to your favourite technicians, shops, and services in Ara.
+            Quick access to your favourite technicians, shops, and local services.
           </p>
         </div>
 
@@ -77,10 +77,10 @@ export const CustomerFavouritesPage: React.FC = () => {
           <span className="text-5xl mb-4 block">❤️</span>
           <h2 className="text-xl font-bold text-slate-900 mb-2">No Saved Providers</h2>
           <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-            You haven't saved any service providers yet. Tap the heart icon on any provider profile across Ara to keep them here for fast repeat bookings!
+            You haven't saved any service providers yet. Tap the heart icon on any provider profile to keep them here for fast repeat bookings!
           </p>
           <Button variant="primary" onClick={() => navigate('/search')}>
-            Explore Services in Ara
+            Explore Services
           </Button>
         </div>
       ) : (

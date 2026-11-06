@@ -68,7 +68,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span className="font-semibold text-slate-700">📍 {seller.area}, Ara</span>
+              <span className="font-semibold text-slate-700">📍 {seller.area}</span>
               <span>&bull;</span>
               <span>📞 {seller.phone}</span>
               {seller.owner && (

@@ -11,12 +11,12 @@ import i18n from '../../../lib/i18n';
 describe('Header, Footer & Layout (FE-003)', () => {
   beforeEach(() => {
     useAuthStore.getState().clearAuth();
-    useUiStore.setState({ authModalOpen: false, selectedCity: 'ara', language: 'en' });
+    useUiStore.setState({ authModalOpen: false, selectedCity: 'all', selectedCityName: 'All Cities', language: 'en' });
     i18n.changeLanguage('en');
   });
 
   describe('Header', () => {
-    it('renders logo, Ara city badge, and navigation links', () => {
+    it('renders logo, city badge, and navigation links', () => {
       render(
         <BrowserRouter>
           <Header />
@@ -24,7 +24,7 @@ describe('Header, Footer & Layout (FE-003)', () => {
       );
 
       expect(screen.getByText('AraKart')).toBeInTheDocument();
-      expect(screen.getByText('Ara')).toBeInTheDocument();
+      expect(screen.getByText('All Cities')).toBeInTheDocument();
       expect(screen.getByText('Find Services')).toBeInTheDocument();
       expect(screen.getByText('Become a Seller')).toBeInTheDocument();
     });
@@ -86,7 +86,7 @@ describe('Header, Footer & Layout (FE-003)', () => {
   });
 
   describe('Footer', () => {
-    it('renders copyright and Ara locality tags', () => {
+    it('renders brand, navigation links, and copyright', () => {
       render(
         <BrowserRouter>
           <Footer />
@@ -94,9 +94,8 @@ describe('Header, Footer & Layout (FE-003)', () => {
       );
 
       expect(screen.getByText('AraKart')).toBeInTheDocument();
-      expect(screen.getByText('Nawada')).toBeInTheDocument();
-      expect(screen.getByText('Katira')).toBeInTheDocument();
-      expect(screen.getByText('Babu Bazar')).toBeInTheDocument();
+      expect(screen.getByText(/Service Offers & Deals/i)).toBeInTheDocument();
+      expect(screen.getByText(/Official Blogs & Guides/i)).toBeInTheDocument();
       expect(screen.getByText(/All rights reserved/i)).toBeInTheDocument();
     });
   });
