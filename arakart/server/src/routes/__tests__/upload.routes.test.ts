@@ -22,13 +22,15 @@ describe('Photo Upload Routes (INT-005)', () => {
     sellerAuthHeader = authHeaderFor(sellerUser);
   });
 
-  it('POST /api/v1/sellers/me/photos uploads a valid image and appends to provider photos', async () => {
-    const fakeImageBuffer = Buffer.from('fake-png-binary-data');
+  const validPngBuffer = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  ]);
 
+  it('POST /api/v1/sellers/me/photos uploads a valid image and appends to provider photos', async () => {
     const res = await request(app)
       .post('/api/v1/sellers/me/photos')
       .set(sellerAuthHeader)
-      .attach('photo', fakeImageBuffer, { filename: 'shop.png', contentType: 'image/png' });
+      .attach('photo', validPngBuffer, { filename: 'shop.png', contentType: 'image/png' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -80,12 +82,10 @@ describe('Photo Upload Routes (INT-005)', () => {
       ],
     });
 
-    const smallBuffer = Buffer.from('photo-data');
-
     const res = await request(app)
       .post('/api/v1/sellers/me/photos')
       .set(sellerAuthHeader)
-      .attach('photo', smallBuffer, { filename: 'seventh.png', contentType: 'image/png' });
+      .attach('photo', validPngBuffer, { filename: 'seventh.png', contentType: 'image/png' });
 
     expect(res.status).toBe(422);
     expect(res.body.success).toBe(false);

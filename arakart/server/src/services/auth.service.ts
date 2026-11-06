@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { User, IUser } from '../models/User.model';
 import { Provider } from '../models/Provider.model';
@@ -10,6 +11,9 @@ import {
   JwtPayload,
 } from '../utils/jwt.utils';
 import { env } from '../config/env';
+
+const hashToken = (token: string): string =>
+  crypto.createHash('sha256').update(token).digest('hex');
 
 export interface AuthTokens {
   accessToken: string;
@@ -33,7 +37,8 @@ export class AuthService {
   }
 
   /**
-   * Helper to generate Access and Refresh tokens with sellerId if provider exists
+   * Helper to generate Access and Refresh tokens with sellerId if provider exists,
+   * and persist the SHA-256 hash of the active refresh token for server-side rotation & revocation.
    */
   async generateTokensForUser(user: IUser): Promise<AuthTokens> {
     const provider = await Provider.findOne({ owner: user._id });
@@ -43,9 +48,21 @@ export class AuthService {
       sellerId: provider ? provider._id.toString() : null,
     };
 
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+    const refreshTokenHash = hashToken(refreshToken);
+    const now = new Date();
+
+    user.refreshTokenHash = refreshTokenHash;
+    user.lastLoginAt = now;
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { refreshTokenHash, lastLoginAt: now } }
+    );
+
     return {
-      accessToken: signAccessToken(payload),
-      refreshToken: signRefreshToken(payload),
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -237,6 +254,7 @@ export class AuthService {
     const passwordHash = await hashPassword(newPassword);
     user.passwordHash = passwordHash;
     user.emailVerified = true;
+    user.refreshTokenHash = null; // Revoke any active refresh sessions upon password reset
     if (!user.authMethods.includes('email')) {
       user.authMethods.push('email');
     }
@@ -343,7 +361,29 @@ export class AuthService {
       throw new Error('Account suspended.');
     }
 
+    const incomingHash = hashToken(refreshToken);
+    if (!user.refreshTokenHash || user.refreshTokenHash !== incomingHash) {
+      // Token reuse or revoked session detected: invalidate active refresh token hash immediately
+      await User.updateOne({ _id: user._id }, { $set: { refreshTokenHash: null } });
+      throw new Error('Session expired or token has been revoked. Please log in again.');
+    }
+
     return this.generateTokensForUser(user);
+  }
+
+  async revokeRefreshToken(refreshToken?: string, userId?: string): Promise<void> {
+    if (userId) {
+      await User.updateOne({ _id: userId }, { $set: { refreshTokenHash: null } });
+      return;
+    }
+    if (refreshToken) {
+      try {
+        const decoded = verifyRefreshToken(refreshToken);
+        await User.updateOne({ _id: decoded.userId }, { $set: { refreshTokenHash: null } });
+      } catch {
+        // Ignore invalid/expired token during logout
+      }
+    }
   }
 }
 

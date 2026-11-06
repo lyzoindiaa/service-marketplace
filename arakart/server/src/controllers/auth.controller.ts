@@ -177,7 +177,9 @@ export class AuthController {
     }
   }
 
-  async logout(_req: Request, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<void> {
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    await authService.revokeRefreshToken(refreshToken, req.user?.userId);
     clearRefreshTokenCookie(res);
     sendSuccess(res, { message: 'Logged out successfully' });
   }

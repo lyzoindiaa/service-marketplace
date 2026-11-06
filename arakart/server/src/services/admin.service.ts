@@ -161,6 +161,9 @@ export class AdminService {
     }
 
     user.suspended = suspended;
+    if (suspended) {
+      user.refreshTokenHash = null;
+    }
     await user.save();
 
     // If suspending a seller, automatically take their provider listing offline

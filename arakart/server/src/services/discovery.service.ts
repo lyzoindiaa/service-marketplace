@@ -71,12 +71,14 @@ export class DiscoveryService {
       return null;
     }
 
-    // Find all approved and live providers in this city
+    // Find all approved and live providers in this city using .lean() for fast read performance
     const providers = await Provider.find({
-      city: { $regex: new RegExp(`^${city.nameEn}$`, 'i') },
+      city: { $regex: new RegExp(`^${city.nameEn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       status: 'approved',
       isLive: true,
-    }).select('area areasServed');
+    })
+      .select('area areasServed')
+      .lean();
 
     const areaSet = new Set<string>();
 
