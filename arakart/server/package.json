@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:indexes": "tsx src/scripts/syncIndexes.ts",
+    "seed": "tsx src/scripts/seed.ts",
     "test": "jest --runInBand --detectOpenHandles",
     "test:coverage": "jest --coverage --runInBand",
     "lint": "tsc --noEmit"
