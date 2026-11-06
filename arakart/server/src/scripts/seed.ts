@@ -86,7 +86,9 @@ export async function runSeed(options: SeedOptions = {}): Promise<SeedSummary> {
       phone: adminPhone,
       passwordHash,
       role: 'admin',
-      isVerified: true,
+      emailVerified: true,
+      phoneVerified: true,
+      authMethods: ['email'],
       preferredLanguage: 'hi',
     });
     summary.adminCreated = true;
@@ -113,7 +115,9 @@ export async function runSeed(options: SeedOptions = {}): Promise<SeedSummary> {
         email: 'customer@arakart.local',
         passwordHash: customerPasswordHash,
         role: 'customer',
-        isVerified: true,
+        phoneVerified: true,
+        emailVerified: true,
+        authMethods: ['phone', 'email'],
         preferredLanguage: 'hi',
       });
     }
@@ -128,7 +132,9 @@ export async function runSeed(options: SeedOptions = {}): Promise<SeedSummary> {
         email: 'seller@arakart.local',
         passwordHash: sellerPasswordHash,
         role: 'seller',
-        isVerified: true,
+        phoneVerified: true,
+        emailVerified: true,
+        authMethods: ['phone', 'email'],
         preferredLanguage: 'hi',
       });
     }
