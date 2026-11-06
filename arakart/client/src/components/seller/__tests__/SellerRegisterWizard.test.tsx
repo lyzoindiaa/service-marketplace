@@ -60,7 +60,7 @@ describe('SellerRegisterWizard Component (FE-008)', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Step 2 of 4/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Business Name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Business Name \(English\)/i)).toBeInTheDocument();
     });
   });
 
@@ -71,11 +71,11 @@ describe('SellerRegisterWizard Component (FE-008)', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Business Name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Business Name \(English\)/i)).toBeInTheDocument();
     });
 
     // Fill Step 2
-    fireEvent.change(screen.getByLabelText(/Business Name/i), {
+    fireEvent.change(screen.getByLabelText(/Business Name \(English\)/i), {
       target: { value: 'Shree Ram Electricals' },
     });
     // Select Category
@@ -130,9 +130,9 @@ describe('SellerRegisterWizard Component (FE-008)', () => {
 
     // Step 2 inputs
     await waitFor(() => {
-      expect(screen.getByLabelText(/Business Name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Business Name \(English\)/i)).toBeInTheDocument();
     });
-    fireEvent.change(screen.getByLabelText(/Business Name/i), {
+    fireEvent.change(screen.getByLabelText(/Business Name \(English\)/i), {
       target: { value: 'Shree Ram Electricals' },
     });
     fireEvent.click(screen.getByText('Electrician'));

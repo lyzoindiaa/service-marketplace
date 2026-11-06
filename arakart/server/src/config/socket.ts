@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { env } from './env';
 import { logger } from '../utils/logger';
+import { verifyAccessToken } from '../utils/jwt.utils';
 
 let io: SocketIOServer | null = null;
 
@@ -9,22 +10,52 @@ export const initSocket = (server: HttpServer): SocketIOServer => {
   io = new SocketIOServer(server, {
     cors: {
       origin: env.CORS_ORIGIN,
-      credentials: true
+      credentials: true,
+    },
+  });
+
+  // JWT Authentication handshake middleware
+  io.use((socket, next) => {
+    const token =
+      socket.handshake.auth?.token ||
+      (socket.handshake.headers?.authorization
+        ? socket.handshake.headers.authorization.replace('Bearer ', '')
+        : null);
+
+    if (!token) {
+      return next(new Error('Authentication required for socket connection'));
+    }
+
+    try {
+      const decoded = verifyAccessToken(token);
+      (socket as any).user = decoded;
+      next();
+    } catch {
+      return next(new Error('Invalid or expired authentication token'));
     }
   });
 
   io.on('connection', (socket) => {
-    logger.debug(`Socket client connected: ${socket.id}`);
+    const user = (socket as any).user;
+    logger.debug(`Authenticated socket connected: ${socket.id} (user: ${user?.userId})`);
 
+    // Automatically join seller room if user is seller with linked sellerId/providerId
+    if (user && user.sellerId) {
+      const room = `seller:${user.sellerId}`;
+      socket.join(room);
+      logger.debug(`Socket ${socket.id} auto-joined room: ${room}`);
+    }
+
+    // Allow admin or verified owner to explicitly join seller room
     socket.on('joinSellerRoom', (sellerId: string) => {
-      if (sellerId) {
+      if (user && (user.role === 'admin' || user.sellerId === sellerId)) {
         socket.join(`seller:${sellerId}`);
         logger.debug(`Socket ${socket.id} joined seller room: seller:${sellerId}`);
       }
     });
 
     socket.on('disconnect', () => {
-      logger.debug(`Socket client disconnected: ${socket.id}`);
+      logger.debug(`Socket disconnected: ${socket.id}`);
     });
   });
 
