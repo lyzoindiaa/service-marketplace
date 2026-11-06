@@ -16,13 +16,15 @@ export interface User {
 
 export interface ServiceItem {
   _id?: string;
+  id?: string;
   nameEn: string;
   nameHi?: string;
   startingPrice: number;
 }
 
 export interface Provider {
-  _id: string;
+  _id?: string;
+  id: string;
   nameEn: string;
   nameHi?: string;
   categories: string[];
@@ -40,14 +42,19 @@ export interface Provider {
   photos: string[];
   avgRating: number;
   reviewCount: number;
+  profileViews?: number;
+  callClicks?: number;
+  whatsappClicks?: number;
   fromPrice: number;
   verified: boolean;
+  status?: string;
   isLive: boolean;
   isOpen?: boolean;
 }
 
 export interface Category {
-  _id: string;
+  _id?: string;
+  id: string;
   slug: string;
   nameEn: string;
   nameHi: string;
@@ -56,9 +63,16 @@ export interface Category {
 }
 
 export interface City {
-  _id: string;
+  _id?: string;
+  id: string;
   nameEn: string;
   nameHi: string;
   slug: string;
   isLive: boolean;
+}
+
+export interface CityAreas {
+  city: string;
+  slug: string;
+  areas: string[];
 }
