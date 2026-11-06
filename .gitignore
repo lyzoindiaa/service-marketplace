@@ -9,6 +9,10 @@
 /reference/
 *.pdf
 
+# ── Local database & runtime data ──────────────────────────
+/mongodb-data/
+*.log
+
 # ── Node / npm ─────────────────────────────────────────────
 node_modules/
 npm-debug.log*
