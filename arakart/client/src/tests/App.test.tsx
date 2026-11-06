@@ -9,6 +9,12 @@ vi.mock('../services/authService', () => ({
   logoutSession: vi.fn(),
 }));
 
+vi.mock('../services/discoveryService', () => ({
+  fetchCategories: vi.fn().mockResolvedValue([]),
+  fetchCities: vi.fn().mockResolvedValue([]),
+  fetchCityAreas: vi.fn().mockResolvedValue({ city: 'Ara', slug: 'ara', areas: [] }),
+}));
+
 describe('Frontend Scaffold (FE-001)', () => {
   it('renders home page headline with Ara', () => {
     render(<App />);
