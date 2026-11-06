@@ -37,3 +37,12 @@ export const getIO = (): SocketIOServer => {
   }
   return io;
 };
+
+export const emitToSeller = (sellerId: string, event: string, data: any): void => {
+  try {
+    const socketIO = getIO();
+    socketIO.to(`seller:${sellerId}`).emit(event, data);
+  } catch (err: any) {
+    logger.debug(`Socket event '${event}' not emitted (socket server not active): ${err?.message}`);
+  }
+};
