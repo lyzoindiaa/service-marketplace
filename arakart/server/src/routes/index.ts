@@ -7,6 +7,7 @@ import providerRoutes from './provider.routes';
 import userRoutes from './user.routes';
 import reportRoutes from './report.routes';
 import leadRoutes from './lead.routes';
+import reviewRoutes from './review.routes';
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.use('/reports', reportRoutes);
 
 // Leads routes
 router.use('/leads', leadRoutes);
+
+// Reviews routes
+router.use('/reviews', reviewRoutes);
 
 export default router;
