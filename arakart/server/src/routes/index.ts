@@ -8,6 +8,7 @@ import userRoutes from './user.routes';
 import reportRoutes from './report.routes';
 import leadRoutes from './lead.routes';
 import reviewRoutes from './review.routes';
+import sellerRoutes from './seller.routes';
 
 const router = Router();
 
@@ -37,5 +38,8 @@ router.use('/leads', leadRoutes);
 
 // Reviews routes
 router.use('/reviews', reviewRoutes);
+
+// Seller portal routes
+router.use('/sellers', sellerRoutes);
 
 export default router;
