@@ -20,6 +20,8 @@ export const applySellerSchema = z
     categories: z.array(z.string()).optional().default([]),
     requestedCategory: requestedCategorySchema.optional(),
     city: z.string().trim().optional(),
+    cityName: z.string().trim().optional(),
+    state: z.string().trim().optional(),
     area: z.string().trim().min(2, 'Primary area locality is required'),
     areasServed: z.array(z.string().trim()).optional(),
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit Indian mobile number required'),

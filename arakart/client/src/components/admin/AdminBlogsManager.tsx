@@ -11,6 +11,7 @@ import { useUiStore } from '../../store/uiStore';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Spinner } from '../common/Spinner';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export const AdminBlogsManager: React.FC = () => {
   const { addToast } = useUiStore();
@@ -20,6 +21,7 @@ export const AdminBlogsManager: React.FC = () => {
 
   const [editingBlog, setEditingBlog] = useState<BlogItem | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [titleEn, setTitleEn] = useState('');
   const [titleHi, setTitleHi] = useState('');
@@ -60,6 +62,7 @@ export const AdminBlogsManager: React.FC = () => {
     setCategory('Home Maintenance');
     setCoverImageUrl('');
     setIsPublished(true);
+    setFieldErrors({});
     setShowForm(false);
   };
 
@@ -73,13 +76,29 @@ export const AdminBlogsManager: React.FC = () => {
     setCategory(blog.category || 'General');
     setCoverImageUrl(blog.coverImageUrl || '');
     setIsPublished(blog.isPublished);
+    setFieldErrors({});
     setShowForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!titleEn.trim() || !contentEn.trim()) {
-      addToast('Blog English title and content are required', 'error');
+    const errors: Record<string, string> = {};
+
+    if (!titleEn.trim()) {
+      errors.titleEn = 'Please enter the blog title in English';
+    }
+    if (!contentEn.trim()) {
+      errors.contentEn = 'Please enter the full article content in English';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const invalidIds: string[] = [];
+      if (errors.titleEn) invalidIds.push('blog-title-en');
+      if (errors.contentEn) invalidIds.push('blog-content-en');
+      setTimeout(() => {
+        focusFirstInvalidField(invalidIds);
+      }, 0);
       return;
     }
 
@@ -165,7 +184,7 @@ export const AdminBlogsManager: React.FC = () => {
         <Button
           size="md"
           variant={showForm ? 'outline' : 'primary'}
-          className="w-full sm:w-40 sm:min-w-[160px]"
+          className="w-full sm:w-auto sm:min-w-[160px]"
           onClick={() => {
             if (showForm) {
               resetForm();
@@ -176,12 +195,12 @@ export const AdminBlogsManager: React.FC = () => {
         >
           {showForm ? (
             <>
-              <X className="w-4 h-4 mr-1.5" />
+              <X className="w-4 h-4" />
               <span>Close Editor</span>
             </>
           ) : (
             <>
-              <Plus className="w-4 h-4 mr-1.5" />
+              <Plus className="w-4 h-4" />
               <span>Add Blog Post</span>
             </>
           )}
@@ -191,6 +210,7 @@ export const AdminBlogsManager: React.FC = () => {
       {showForm && (
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="bg-white p-6 rounded-2xl border border-brand-primary/30 shadow-sm space-y-4"
         >
           <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2">
@@ -199,40 +219,54 @@ export const AdminBlogsManager: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="blog-title-en" className="block text-xs font-bold text-slate-700 mb-1">
                 Blog Title (English) *
               </label>
               <input
+                id="blog-title-en"
                 type="text"
-                required
                 value={titleEn}
-                onChange={(e) => setTitleEn(e.target.value)}
+                onChange={(e) => {
+                  setTitleEn(e.target.value);
+                  if (fieldErrors.titleEn) {
+                    setFieldErrors((prev) => ({ ...prev, titleEn: '' }));
+                  }
+                }}
                 placeholder="e.g. Top 5 AC Maintenance Tips Before Peak Summer"
-                className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+                className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors focus:outline-none focus:ring-2 ${
+                  fieldErrors.titleEn
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200'
+                    : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-200'
+                }`}
               />
+              {fieldErrors.titleEn && (
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{fieldErrors.titleEn}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="blog-title-hi" className="block text-xs font-bold text-slate-700 mb-1">
                 Blog Title (Hindi - Optional)
               </label>
               <input
+                id="blog-title-hi"
                 type="text"
                 value={titleHi}
                 onChange={(e) => setTitleHi(e.target.value)}
                 placeholder="गर्मियों से पहले एसी रखरखाव के 5 टिप्स"
-                className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:border-indigo-500 focus:ring-indigo-200"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="blog-category" className="block text-xs font-bold text-slate-700 mb-1">
                 Category
               </label>
               <select
+                id="blog-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl bg-white"
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:border-indigo-500 focus:ring-indigo-200"
               >
                 <option value="Home Maintenance">Home Maintenance</option>
                 <option value="Appliance Tips">Appliance Tips</option>
@@ -242,56 +276,71 @@ export const AdminBlogsManager: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="blog-cover-url" className="block text-xs font-bold text-slate-700 mb-1">
                 Cover Image URL (Optional)
               </label>
               <input
+                id="blog-cover-url"
                 type="url"
                 value={coverImageUrl}
                 onChange={(e) => setCoverImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:border-indigo-500 focus:ring-indigo-200"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label htmlFor="blog-excerpt" className="block text-xs font-bold text-slate-700 mb-1">
               Short Excerpt / Summary (Optional)
             </label>
             <input
+              id="blog-excerpt"
               type="text"
               value={excerptEn}
               onChange={(e) => setExcerptEn(e.target.value)}
               placeholder="Brief summary shown on the blog card..."
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:border-indigo-500 focus:ring-indigo-200"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label htmlFor="blog-content-en" className="block text-xs font-bold text-slate-700 mb-1">
               Full Article Content (English) *
             </label>
             <textarea
-              required
+              id="blog-content-en"
               rows={5}
               value={contentEn}
-              onChange={(e) => setContentEn(e.target.value)}
+              onChange={(e) => {
+                setContentEn(e.target.value);
+                if (fieldErrors.contentEn) {
+                  setFieldErrors((prev) => ({ ...prev, contentEn: '' }));
+                }
+              }}
               placeholder="Write the full blog article content here..."
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+              className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors focus:outline-none focus:ring-2 ${
+                fieldErrors.contentEn
+                  ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200'
+                  : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-200'
+              }`}
             />
+            {fieldErrors.contentEn && (
+              <p className="mt-1.5 text-xs text-red-600 font-medium">{fieldErrors.contentEn}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label htmlFor="blog-content-hi" className="block text-xs font-bold text-slate-700 mb-1">
               Full Article Content (Hindi - Optional)
             </label>
             <textarea
+              id="blog-content-hi"
               rows={3}
               value={contentHi}
               onChange={(e) => setContentHi(e.target.value)}
               placeholder="हिंदी में लेख सामग्री..."
-              className="w-full px-3.5 py-2 text-sm border border-slate-200 rounded-xl"
+              className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:border-indigo-500 focus:ring-indigo-200"
             />
           </div>
 
@@ -311,7 +360,7 @@ export const AdminBlogsManager: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="md"
-                className="w-full sm:w-40 sm:min-w-[160px]"
+                className="w-full sm:w-auto sm:min-w-[160px]"
                 onClick={resetForm}
               >
                 Close
@@ -320,7 +369,7 @@ export const AdminBlogsManager: React.FC = () => {
                 type="submit"
                 variant="primary"
                 size="md"
-                className="w-full sm:w-40 sm:min-w-[160px]"
+                className="w-full sm:w-auto sm:min-w-[160px]"
                 isLoading={submitting}
               >
                 {editingBlog ? 'Update Blog' : 'Add Blog Post'}
@@ -335,7 +384,7 @@ export const AdminBlogsManager: React.FC = () => {
           <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
           <p className="text-sm font-semibold text-slate-700">No Blogs Created Yet</p>
           <p className="text-xs text-slate-500 mt-1">
-            Click &ldquo;New Blog Post&rdquo; above to publish your first article.
+            Click &ldquo;Add Blog Post&rdquo; above to publish your first article.
           </p>
         </div>
       ) : (
@@ -343,11 +392,11 @@ export const AdminBlogsManager: React.FC = () => {
           {blogs.map((blog) => (
             <div
               key={blog.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+              className="bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs overflow-hidden"
             >
-              <div className="space-y-1">
+              <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-bold text-slate-900">{blog.titleEn}</h3>
+                  <h3 className="text-base font-bold text-slate-900 break-all">{blog.titleEn}</h3>
                   <Badge variant={blog.isPublished ? 'success' : 'pending'}>
                     {blog.isPublished ? 'Published' : 'Draft'}
                   </Badge>
@@ -355,14 +404,14 @@ export const AdminBlogsManager: React.FC = () => {
                     {blog.category}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 line-clamp-2">{blog.excerptEn}</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-slate-500 line-clamp-2 break-all">{blog.excerptEn}</p>
+                <p className="text-[11px] text-slate-400 break-all">
                   Slug: /blogs/{blog.slug} &bull; Updated{' '}
                   {new Date(blog.updatedAt).toLocaleDateString('en-IN')}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleTogglePublish(blog)}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50"

@@ -199,7 +199,9 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="w-full text-xs font-semibold"
+          className={`w-full text-xs font-semibold ${
+            isFavourite ? 'border-rose-200 bg-rose-50/70 text-rose-600 hover:bg-rose-100' : ''
+          }`}
           onClick={handleFavourite}
           icon={
             <svg
@@ -212,7 +214,7 @@ export const ContactBox: React.FC<ContactBoxProps> = ({
             </svg>
           }
         >
-          {isFavourite ? 'Saved in Favourites' : 'Save to Favourites'}
+          {isFavourite ? 'Saved in Favourites (Remove)' : 'Save to Favourites'}
         </Button>
       </div>
 

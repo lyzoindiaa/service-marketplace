@@ -23,3 +23,13 @@
     @apply bg-white border border-surface-line rounded-card p-6 shadow-card hover:shadow-card-hover transition-all;
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

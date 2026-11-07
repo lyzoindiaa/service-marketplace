@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Provider, IProvider } from '../models/Provider.model';
 import { User } from '../models/User.model';
 import { Lead } from '../models/Lead.model';
+import { City } from '../models/City.model';
 import { deletePhotoFromCloudinary } from '../config/cloudinary';
 
 export class SellerService {
@@ -52,13 +53,84 @@ export class SellerService {
         ? Math.min(...services.map((s: any) => s.startingPrice))
         : 99;
 
+    const rawCityInput = (data.cityName || data.city || 'ara').trim();
+    const normalizedCitySlug =
+      rawCityInput
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'ara';
+
+    const formatTitleCase = (str: string) =>
+      str
+        .trim()
+        .split(/\s+/)
+        .map((w) => (w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(' ');
+
+    let canonicalArea = data.area ? formatTitleCase(data.area) : 'Nawada';
+
+    // If a custom/new city or state was provided, ensure a City document exists in MongoDB
+    if (normalizedCitySlug && normalizedCitySlug !== 'all') {
+      try {
+        const existingCity = await City.findOne({ slug: normalizedCitySlug });
+        if (!existingCity) {
+          const displayCityName =
+            data.cityName?.trim()
+              ? formatTitleCase(data.cityName)
+              : formatTitleCase(rawCityInput);
+          const displayStateName = data.state?.trim() ? formatTitleCase(data.state) : 'Bihar';
+          await City.create({
+            nameEn: displayCityName,
+            nameHi: displayCityName,
+            stateEn: displayStateName,
+            stateHi: displayStateName,
+            slug: normalizedCitySlug,
+            isLive: false, // Activated automatically when admin approves the seller
+            defaultAreas: canonicalArea ? [canonicalArea] : [],
+          });
+        } else if (canonicalArea) {
+          const matchedExistingArea = (existingCity.defaultAreas || []).find(
+            (a) => a.trim().toLowerCase() === canonicalArea.toLowerCase()
+          );
+          if (matchedExistingArea) {
+            canonicalArea = matchedExistingArea.trim();
+          } else {
+            await City.updateOne(
+              { slug: normalizedCitySlug },
+              { $addToSet: { defaultAreas: canonicalArea } }
+            );
+          }
+        }
+      } catch {
+        // Ignore duplicate key race conditions
+      }
+    }
+
+    const normalizedAreasServed = Array.isArray(data.areasServed) && data.areasServed.length > 0
+      ? Array.from(
+          new Map(
+            data.areasServed
+              .filter((a: string) => a && a.trim())
+              .map((a: string) => {
+                const formatted =
+                  a.trim().toLowerCase() === canonicalArea.toLowerCase()
+                    ? canonicalArea
+                    : formatTitleCase(a);
+                return [formatted.toLowerCase(), formatted];
+              })
+          ).values()
+        )
+      : [canonicalArea];
+
     const provider = await Provider.create({
       ...data,
+      area: canonicalArea,
+      areasServed: normalizedAreasServed,
       categories: data.categories || [],
       requestedCategory: data.requestedCategory || undefined,
       email,
       owner: user._id,
-      city: (data.city || 'all').toLowerCase().trim(),
+      city: normalizedCitySlug,
       status: 'pending',
       isLive: false,
       verified: false,

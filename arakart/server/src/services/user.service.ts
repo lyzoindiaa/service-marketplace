@@ -14,13 +14,17 @@ export class UserService {
       return [];
     }
 
-    return (user.favourites as any[]).map((doc) => {
-      const json = doc.toJSON ? doc.toJSON() : doc;
-      return {
-        ...json,
-        phone: maskPhoneNumber(json.phone),
-      };
-    });
+    return (user.favourites as any[])
+      .filter(Boolean)
+      .map((doc) => {
+        const json = doc.toJSON ? doc.toJSON() : doc;
+        const id = (json.id || json._id || doc._id)?.toString();
+        return {
+          ...json,
+          id,
+          phone: maskPhoneNumber(json.phone),
+        };
+      });
   }
 
   async addFavourite(userId: string, providerId: string): Promise<string[]> {
@@ -53,9 +57,10 @@ export class UserService {
       throw error;
     }
 
+    const objId = new mongoose.Types.ObjectId(providerId);
     const user = await User.findByIdAndUpdate(
       userId,
-      { $pull: { favourites: providerId } },
+      { $pull: { favourites: { $in: [providerId, objId] } } },
       { new: true }
     );
 

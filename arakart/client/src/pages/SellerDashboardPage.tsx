@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
@@ -10,6 +10,7 @@ import {
 import { ProviderProfile, ProviderServiceItem } from '../services/providerService';
 import { getSellerLeads } from '../services/leadService';
 import { fetchProviderReviews, ReviewItemData } from '../services/reviewService';
+import { fetchSellerOffers, OfferItem } from '../services/offerService';
 import { useSocket } from '../hooks/useSocket';
 import { Spinner } from '../components/common/Spinner';
 import { Badge } from '../components/common/Badge';
@@ -45,15 +46,18 @@ export const SellerDashboardPage: React.FC = () => {
 
   const handleTabChange = (tab: DashboardTab) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
+    setSearchParams({ tab }, { replace: true });
+    loadDashboardData(true);
   };
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [stats, setStats] = useState<SellerStatsResponse | null>(null);
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItemData[]>([]);
+  const [offers, setOffers] = useState<OfferItem[]>([]);
   const [totalReviewsCount, setTotalReviewsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [unreadLeadsCount, setUnreadLeadsCount] = useState(0);
+  const hasLoadedRef = useRef(false);
 
   const { socket } = useSocket(profile?.id);
 
@@ -87,6 +91,16 @@ export const SellerDashboardPage: React.FC = () => {
         console.error('Failed to load seller leads:', err);
       }
 
+      // Fetch initial offers
+      try {
+        const offersRes = await fetchSellerOffers();
+        if (Array.isArray(offersRes)) {
+          setOffers(offersRes);
+        }
+      } catch {
+        // Ignore offer prefetch errors on initial load
+      }
+
       // Fetch initial reviews if profile exists
       const targetProviderId = profData?.id || (profData as any)?._id;
       if (targetProviderId) {
@@ -116,7 +130,10 @@ export const SellerDashboardPage: React.FC = () => {
       navigate('/');
       return;
     }
-    loadDashboardData();
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadDashboardData();
+    }
   }, [isAuthenticated, navigate, loadDashboardData]);
 
   // Real-time Lead Listener (INT-003)
@@ -151,12 +168,44 @@ export const SellerDashboardPage: React.FC = () => {
       });
     };
 
+    const handleProfileViewed = (payload: { profileViews?: number }) => {
+      setStats((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          profileViews:
+            typeof payload?.profileViews === 'number'
+              ? payload.profileViews
+              : prev.profileViews + 1,
+        };
+      });
+    };
+
+    const handleNewReview = (newReview: any) => {
+      addToast(`⭐ New ${newReview.rating}★ review from ${newReview.customerName || 'a customer'}!`, 'info');
+      loadDashboardData(true);
+    };
+
     socket.on('newLead', handleNewLead);
+    socket.on('profileViewed', handleProfileViewed);
+    socket.on('newReview', handleNewReview);
 
     return () => {
       socket.off('newLead', handleNewLead);
+      socket.off('profileViewed', handleProfileViewed);
+      socket.off('newReview', handleNewReview);
     };
-  }, [socket, profile?.id, addToast]);
+  }, [socket, profile?.id, addToast, loadDashboardData]);
+
+  // Silently sync dashboard data when seller returns to the browser window/tab
+  useEffect(() => {
+    if (!isAuthenticated || !profile?.id) return;
+    const handleWindowFocus = () => {
+      loadDashboardData(true);
+    };
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [isAuthenticated, profile?.id, loadDashboardData]);
 
   const handleLiveToggled = (newLiveStatus: boolean) => {
     if (profile) {
@@ -380,7 +429,11 @@ export const SellerDashboardPage: React.FC = () => {
 
         {activeTab === 'offers' && (
           <div className="max-w-4xl">
-            <SellerOffersManager services={profile.services || []} />
+            <SellerOffersManager
+              services={profile.services || []}
+              initialOffers={offers}
+              onOffersUpdated={setOffers}
+            />
           </div>
         )}
 

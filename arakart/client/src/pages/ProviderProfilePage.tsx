@@ -23,7 +23,7 @@ import { useUiStore } from '../store/uiStore';
 
 export const ProviderProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setFavourites: setStoreFavourites } = useAuthStore();
   const { language, addToast, openAuthModal } = useUiStore();
 
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
@@ -98,40 +98,53 @@ export const ProviderProfilePage: React.FC = () => {
   // Sync favourites status
   useEffect(() => {
     if (isAuthenticated && id) {
-      if (user?.favourites) {
-        setIsFavourite(user.favourites.includes(id));
+      if (user?.favourites && Array.isArray(user.favourites)) {
+        setIsFavourite(user.favourites.map(String).includes(String(id)));
       } else {
         getFavourites()
           .then((favs) => {
-            const has = favs.some((f: any) => (f.id || f._id) === id);
-            setIsFavourite(has);
+            const ids = favs.map((f: any) => String(f.id || f._id));
+            setStoreFavourites(ids);
+            setIsFavourite(ids.includes(String(id)));
           })
           .catch(() => {});
       }
     } else {
       setIsFavourite(false);
     }
-  }, [isAuthenticated, user?.favourites, id]);
+  }, [isAuthenticated, user?.favourites, id, setStoreFavourites]);
 
   const handleToggleFavourite = async (providerId: string) => {
     if (!isAuthenticated) return;
 
+    const currentFavs = (user?.favourites || []).map(String);
+
     if (isFavourite) {
       setIsFavourite(false);
+      setStoreFavourites(currentFavs.filter((fId) => fId !== String(providerId)));
       try {
-        await removeFavourite(providerId);
+        const res = await removeFavourite(providerId);
+        if (res?.favourites) {
+          setStoreFavourites(res.favourites);
+        }
         addToast(language === 'hi' ? 'पसंदीदा सूची से हटाया गया' : 'Removed from favourites', 'info');
       } catch {
         setIsFavourite(true);
+        setStoreFavourites(currentFavs);
         addToast('Failed to update favourite', 'error');
       }
     } else {
       setIsFavourite(true);
+      setStoreFavourites(Array.from(new Set([...currentFavs, String(providerId)])));
       try {
-        await addFavourite(providerId);
+        const res = await addFavourite(providerId);
+        if (res?.favourites) {
+          setStoreFavourites(res.favourites);
+        }
         addToast(language === 'hi' ? 'पसंदीदा सूची में जोड़ा गया' : 'Added to favourites', 'success');
       } catch {
         setIsFavourite(false);
+        setStoreFavourites(currentFavs);
         addToast('Failed to update favourite', 'error');
       }
     }
@@ -268,7 +281,7 @@ export const ProviderProfilePage: React.FC = () => {
                     <span className="text-xs text-slate-400">
                       ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
                     </span>
-                    {provider.experience && provider.experience > 0 && (
+                    {(provider.experience ?? 0) > 0 && (
                       <>
                         <span className="text-slate-300">•</span>
                         <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">

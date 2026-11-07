@@ -63,7 +63,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         )}
       </div>
 
-      {error ? (
+      {error && error.trim() ? (
         <p id={`${inputId}-error`} className="mt-1.5 text-xs text-red-600 font-medium">
           {error}
         </p>

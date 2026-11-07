@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Review, IReview } from '../models/Review.model';
 import { Provider } from '../models/Provider.model';
 import { User } from '../models/User.model';
+import { emitToSeller } from '../config/socket';
 
 export interface ProviderReviewsResult {
   reviews: any[];
@@ -74,7 +75,13 @@ export class ReviewService {
 
       await this.recalculateProviderRating(provider._id.toString());
 
-      return review.toJSON();
+      const reviewJson = review.toJSON();
+      emitToSeller(provider._id.toString(), 'newReview', reviewJson);
+      if (provider.owner && provider.owner.toString() !== provider._id.toString()) {
+        emitToSeller(provider.owner.toString(), 'newReview', reviewJson);
+      }
+
+      return reviewJson;
     } catch (err: any) {
       if (err.code === 11000) {
         const error: any = new Error('You have already reviewed this provider');

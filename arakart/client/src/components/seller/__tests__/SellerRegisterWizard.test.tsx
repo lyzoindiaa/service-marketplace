@@ -32,7 +32,7 @@ describe('SellerRegisterWizard Component (FE-008)', () => {
       areas: mockAreas,
     });
     useAuthStore.setState({
-      user: { id: 'usr1', name: 'Alok Kumar', phone: '9876543210', role: 'customer', authMethods: ['phone'] },
+      user: { id: 'usr1', name: 'Alok Kumar', email: 'alok@example.com', phone: '9876543210', role: 'customer', authMethods: ['phone'] },
       isAuthenticated: true,
       accessToken: 'token123',
     });

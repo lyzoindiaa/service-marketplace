@@ -3,6 +3,7 @@ import { Provider, IProvider } from '../models/Provider.model';
 import { Category } from '../models/Category.model';
 import { Review } from '../models/Review.model';
 import { SearchProvidersQuery } from '../validators/provider.validators';
+import { emitToSeller } from '../config/socket';
 
 export const maskPhoneNumber = (phone: string): string => {
   if (!phone) return '';
@@ -162,6 +163,14 @@ export class ProviderService {
     if (provider.status === 'approved' && provider.isLive && !isOwner && !isAdmin) {
       await Provider.updateOne({ _id: id }, { $inc: { profileViews: 1 } });
       provider.profileViews = (provider.profileViews || 0) + 1;
+      const viewPayload = {
+        providerId: provider._id.toString(),
+        profileViews: provider.profileViews,
+      };
+      emitToSeller(provider._id.toString(), 'profileViewed', viewPayload);
+      if (provider.owner && provider.owner.toString() !== provider._id.toString()) {
+        emitToSeller(provider.owner.toString(), 'profileViewed', viewPayload);
+      }
     }
 
     const json = provider.toJSON ? provider.toJSON() : provider.toObject();
@@ -210,7 +219,7 @@ export class ProviderService {
       Review.find(reviewFilter)
         .populate('provider', 'nameEn nameHi area city')
         .sort({ createdAt: -1 })
-        .limit(6)
+        .limit(20)
         .lean(),
     ]);
 
