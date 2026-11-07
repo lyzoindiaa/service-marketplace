@@ -3,6 +3,7 @@ import { AdminUserItem, suspendUser } from '../../services/adminService';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { useUiStore } from '../../store/uiStore';
+import { useAuthStore } from '../../store/authStore';
 
 export interface UserManagementProps {
   users: AdminUserItem[];
@@ -14,6 +15,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   onUserUpdated,
 }) => {
   const { addToast } = useUiStore();
+  const { user: currentUser } = useAuthStore();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleToggleSuspend = async (user: AdminUserItem) => {
@@ -54,48 +56,74 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-5 py-4 font-bold text-slate-900">
-                  {u.name}
-                </td>
-                <td className="px-5 py-4 text-slate-600">
-                  <div>{u.phone || '—'}</div>
-                  {u.email && <div className="text-xs text-slate-400">{u.email}</div>}
-                </td>
-                <td className="px-5 py-4">
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold uppercase ${
-                      u.role === 'admin'
-                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                        : u.role === 'seller'
-                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  {u.suspended ? (
-                    <Badge variant="closed">Suspended</Badge>
-                  ) : (
-                    <Badge variant="open">Active</Badge>
-                  )}
-                </td>
-                <td className="px-5 py-4 text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    loading={loadingId === u.id}
-                    onClick={() => handleToggleSuspend(u)}
-                    className={u.suspended ? 'text-emerald-600 border-emerald-300' : 'text-rose-600 border-rose-200'}
-                  >
-                    {u.suspended ? 'Unsuspend' : 'Suspend'}
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {users.map((u) => {
+              const isCurrentUser = Boolean(
+                currentUser && (
+                  (currentUser.id && currentUser.id === u.id) ||
+                  (currentUser._id && currentUser._id === u.id) ||
+                  (currentUser.id && (u as any)._id && currentUser.id === (u as any)._id) ||
+                  (currentUser.email && u.email && currentUser.email.toLowerCase() === u.email.toLowerCase())
+                )
+              );
+              const isSelfAdmin = isCurrentUser && (currentUser?.role === 'admin' || u.role === 'admin');
+              const cannotSuspend = isSelfAdmin || u.role === 'admin';
+
+              return (
+                <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-5 py-4 font-bold text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <span>{u.name}</span>
+                      {isCurrentUser && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          You
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-slate-600">
+                    <div>{u.phone || '—'}</div>
+                    {u.email && <div className="text-xs text-slate-400">{u.email}</div>}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold uppercase ${
+                        u.role === 'admin'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : u.role === 'seller'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    {u.suspended ? (
+                      <Badge variant="closed">Suspended</Badge>
+                    ) : (
+                      <Badge variant="open">Active</Badge>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    {cannotSuspend ? (
+                      <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg">
+                        {isCurrentUser ? 'Cannot suspend self' : 'Admin'}
+                      </span>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="md"
+                        loading={loadingId === u.id}
+                        onClick={() => handleToggleSuspend(u)}
+                        className={u.suspended ? 'text-emerald-600 border-emerald-300' : 'text-rose-600 border-rose-200'}
+                      >
+                        {u.suspended ? 'Unsuspend' : 'Suspend'}
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

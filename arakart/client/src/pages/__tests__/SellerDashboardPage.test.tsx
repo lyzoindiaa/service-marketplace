@@ -83,6 +83,7 @@ const mockLeadsResponse: leadService.SellerLeadsResponse = {
 describe('SellerDashboardPage (FE-009)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, '', '/seller/dashboard');
     useAuthStore.setState({
       user: { id: 'usr_seller', name: 'Ravi Seller', role: 'seller', sellerId: 'prov_test_1', authMethods: ['phone'] },
       isAuthenticated: true,

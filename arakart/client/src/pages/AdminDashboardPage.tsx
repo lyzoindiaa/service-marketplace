@@ -23,13 +23,14 @@ import { Spinner } from '../components/common/Spinner';
 import { AdminKpiStrip } from '../components/admin/AdminKpiStrip';
 import { PendingApprovals } from '../components/admin/PendingApprovals';
 import { UserManagement } from '../components/admin/UserManagement';
-import { CategoryCityManager } from '../components/admin/CategoryCityManager';
+import { CategoryManager } from '../components/admin/CategoryManager';
+import { CityManager } from '../components/admin/CityManager';
 import { ReportsManager } from '../components/admin/ReportsManager';
 import { ActivityFeed } from '../components/admin/ActivityFeed';
 import { AdminBlogsManager } from '../components/admin/AdminBlogsManager';
 import { AdminOffersManager } from '../components/admin/AdminOffersManager';
 
-type AdminTab = 'overview' | 'pending' | 'users' | 'categories' | 'blogs' | 'offers' | 'reports';
+type AdminTab = 'overview' | 'pending' | 'users' | 'categories' | 'cities' | 'offers' | 'blogs' | 'reports';
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,9 +47,11 @@ export const AdminDashboardPage: React.FC = () => {
   const [cities, setCities] = useState<CityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadAdminData = useCallback(async () => {
+  const loadAdminData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const [
         statsData,
         pendingData,
@@ -77,7 +80,9 @@ export const AdminDashboardPage: React.FC = () => {
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load admin console', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [addToast]);
 
@@ -89,9 +94,13 @@ export const AdminDashboardPage: React.FC = () => {
     loadAdminData();
   }, [isAuthenticated, user?.role, navigate, loadAdminData]);
 
-  const handlePendingActionComplete = () => {
-    loadAdminData();
-  };
+  const handlePendingActionComplete = useCallback(() => {
+    loadAdminData(true);
+  }, [loadAdminData]);
+
+  const handleRefreshSilent = useCallback(() => {
+    loadAdminData(true);
+  }, [loadAdminData]);
 
   const handleUserUpdated = (userId: string, newSuspended: boolean) => {
     setUsers((prev) =>
@@ -185,7 +194,18 @@ export const AdminDashboardPage: React.FC = () => {
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
           }`}
         >
-          🛠️ Categories & Cities
+          🛠️ Categories
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cities')}
+          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+            activeTab === 'cities'
+              ? 'bg-brand-primary text-white shadow-sm'
+              : 'text-ink-muted hover:text-ink hover:bg-slate-100'
+          }`}
+        >
+          📍 Cities
         </button>
 
         <button
@@ -290,10 +310,16 @@ export const AdminDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'categories' && (
-          <CategoryCityManager
+          <CategoryManager
             categories={categories}
+            onRefresh={handleRefreshSilent}
+          />
+        )}
+
+        {activeTab === 'cities' && (
+          <CityManager
             cities={cities}
-            onRefresh={loadAdminData}
+            onRefresh={handleRefreshSilent}
           />
         )}
 

@@ -8,6 +8,13 @@ export interface IServiceItem {
   startingPrice: number;
 }
 
+export interface IRequestedCategory {
+  nameEn: string;
+  nameHi?: string;
+  description?: string;
+  status?: 'pending' | 'approved' | 'remapped' | 'rejected';
+}
+
 export type ProviderStatus = 'pending' | 'approved' | 'rejected';
 
 export interface IProvider extends Document {
@@ -16,11 +23,13 @@ export interface IProvider extends Document {
   nameEn: string;
   nameHi?: string;
   categories: string[];
+  requestedCategory?: IRequestedCategory;
   area: string;
   areaKey: string;
   areasServed: string[];
   areasServedKeys: string[];
   city: string;
+  email?: string;
   phone: string;
   whatsapp?: string;
   bioEn?: string;
@@ -75,6 +84,17 @@ const providerSchema = new Schema<IProvider>(
       type: [String],
       required: true,
       index: true,
+      default: [],
+    },
+    requestedCategory: {
+      nameEn: { type: String, trim: true },
+      nameHi: { type: String, trim: true },
+      description: { type: String, trim: true },
+      status: {
+        type: String,
+        enum: ['pending', 'approved', 'remapped', 'rejected'],
+        default: 'pending',
+      },
     },
     area: {
       type: String,
@@ -100,6 +120,11 @@ const providerSchema = new Schema<IProvider>(
       lowercase: true,
       trim: true,
       index: true,
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
     },
     phone: {
       type: String,

@@ -161,7 +161,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                   </span>
                 </div>
                 <span className="text-xs text-slate-400">
-                  ({provider.reviewCount})
+                  ({provider.reviewCount || 0})
                 </span>
                 {provider.experience && provider.experience > 0 && (
                   <>
@@ -261,7 +261,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
       <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
         <Button
           variant="secondary"
-          size="sm"
+          size="md"
           className="flex-1"
           onClick={handleCallClick}
           loading={isCalling}
@@ -282,7 +282,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
 
         <Button
           variant="whatsapp"
-          size="sm"
+          size="md"
           className="flex-1"
           onClick={handleWhatsAppClick}
           loading={isMessaging}

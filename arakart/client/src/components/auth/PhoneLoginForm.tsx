@@ -5,6 +5,7 @@ import { useUiStore } from '../../store/uiStore';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { CodeInput } from './CodeInput';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export interface PhoneLoginFormProps {
   onSuccess: () => void;
@@ -36,6 +37,7 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       setError('Please enter a valid 10-digit Indian mobile number');
+      setTimeout(() => focusFirstInvalidField(['auth-phone-input']), 0);
       return;
     }
 
@@ -61,11 +63,13 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
     if (e) e.preventDefault();
     if (code.length !== 6) {
       setError('Please enter the complete 6-digit OTP');
+      setTimeout(() => focusFirstInvalidField(['auth-otp-input-0']), 0);
       return;
     }
 
     setLoading(true);
     setError(null);
+
 
     try {
       const res = await verifyPhoneOtp(phone, code, name || undefined);
@@ -89,6 +93,7 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
     return (
       <form onSubmit={handleSendOtp} className="space-y-4">
         <Input
+          id="auth-phone-input"
           label="Mobile Number"
           name="phone"
           type="tel"
@@ -106,7 +111,7 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
         <Button
           type="submit"
           variant="primary"
-          size="lg"
+          size="md"
           className="w-full"
           loading={loading}
         >
@@ -141,7 +146,15 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
         <label className="block text-sm font-medium text-slate-700 mb-2">
           Enter 6-digit OTP sent to +91-{phone.slice(-10)}
         </label>
-        <CodeInput value={code} onChange={setCode} disabled={loading} />
+        <CodeInput
+          value={code}
+          onChange={(newCode) => {
+            setCode(newCode);
+            if (error) setError(null);
+          }}
+          disabled={loading}
+          hasError={Boolean(error)}
+        />
       </div>
 
       <Input
@@ -158,7 +171,7 @@ export const PhoneLoginForm: React.FC<PhoneLoginFormProps> = ({ onSuccess }) => 
       <Button
         type="submit"
         variant="primary"
-        size="lg"
+        size="md"
         className="w-full"
         loading={loading}
       >

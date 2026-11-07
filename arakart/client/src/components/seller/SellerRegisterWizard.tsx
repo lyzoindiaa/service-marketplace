@@ -7,10 +7,11 @@ import { Input } from '../common/Input';
 import { Badge } from '../common/Badge';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export const SellerRegisterWizard: React.FC = () => {
   const { user, accessToken, setAuth } = useAuthStore();
-  const { selectedCity, addToast } = useUiStore();
+  const { selectedCity, addToast, language } = useUiStore();
 
   const [step, setStep] = useState<number>(1);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -18,13 +19,19 @@ export const SellerRegisterWizard: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Form State
+  const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [whatsapp, setWhatsapp] = useState(user?.phone || '');
   const [nameEn, setNameEn] = useState('');
   const [nameHi, setNameHi] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isRequestingCategory, setIsRequestingCategory] = useState(false);
+  const [requestedCatNameEn, setRequestedCatNameEn] = useState('');
+  const [requestedCatNameHi, setRequestedCatNameHi] = useState('');
+  const [requestedCatDesc, setRequestedCatDesc] = useState('');
   const [area, setArea] = useState('Nawada');
   const [areasServed, setAreasServed] = useState<string[]>(['Nawada']);
   const [experience, setExperience] = useState<number>(3);
@@ -36,7 +43,10 @@ export const SellerRegisterWizard: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (user?.phone) {
+    if (user?.email && !email) {
+      setEmail(user.email);
+    }
+    if (user?.phone && !phone) {
       setPhone(user.phone);
       setWhatsapp(user.phone);
     }
@@ -90,31 +100,90 @@ export const SellerRegisterWizard: React.FC = () => {
 
   const handleNext = () => {
     setErrorMessage(null);
+    setFieldErrors({});
 
     if (step === 1) {
-      if (!phone || phone.replace(/\D/g, '').length !== 10) {
-        setErrorMessage('Please enter a valid 10-digit Indian mobile number');
+      const errors: Record<string, string> = {};
+      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, '') : '';
+
+      if (email.trim() && !/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+        errors.email = 'Please enter a valid email address';
+      }
+      if (!phone || cleanPhone.length !== 10) {
+        errors.phone = 'Please enter a valid 10-digit Indian mobile number';
+      }
+      if (whatsapp && cleanWhatsapp.length !== 10) {
+        errors.whatsapp = 'Please enter a valid 10-digit WhatsApp number';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setErrorMessage(Object.values(errors)[0]);
+        setTimeout(() => {
+          const invalidIds: string[] = [];
+          if (errors.email) invalidIds.push('seller-email');
+          if (errors.phone) invalidIds.push('seller-phone');
+          if (errors.whatsapp) invalidIds.push('seller-whatsapp');
+          focusFirstInvalidField(invalidIds);
+        }, 0);
         return;
       }
       setStep(2);
     } else if (step === 2) {
+      const errors: Record<string, string> = {};
       if (!nameEn.trim() || nameEn.trim().length < 3) {
-        setErrorMessage('Please enter your business or trade name (at least 3 characters)');
-        return;
+        errors.nameEn = 'Please enter your business or trade name (at least 3 characters)';
       }
       if (selectedCategories.length === 0) {
-        setErrorMessage('Please select at least 1 service category');
-        return;
+        if (!isRequestingCategory) {
+          errors.categories = 'Please select at least 1 service category or propose a new trade';
+        } else if (!requestedCatNameEn.trim() || requestedCatNameEn.trim().length < 2) {
+          errors.requestedCatNameEn = 'Please enter the trade/category name (at least 2 characters)';
+        }
+      } else if (isRequestingCategory && (!requestedCatNameEn.trim() || requestedCatNameEn.trim().length < 2)) {
+        errors.requestedCatNameEn = 'Please enter the trade/category name (at least 2 characters)';
       }
       if (!area) {
-        setErrorMessage('Please choose your primary locality');
+        errors.area = 'Please choose your primary locality';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setErrorMessage(Object.values(errors)[0]);
+        setTimeout(() => {
+          const invalidIds: string[] = [];
+          if (errors.nameEn) invalidIds.push('business-name');
+          if (errors.requestedCatNameEn) invalidIds.push('req-cat-name-en');
+          if (errors.categories) invalidIds.push('seller-category-section');
+          if (errors.area) invalidIds.push('primary-locality');
+          focusFirstInvalidField(invalidIds);
+        }, 0);
         return;
       }
       setStep(3);
     } else if (step === 3) {
+      const errors: Record<string, string> = {};
+      let firstInvalidId: string | null = null;
+
+      services.forEach((srv, idx) => {
+        if (!srv.nameEn.trim()) {
+          errors[`service_name_${idx}`] = 'Service name is required';
+          if (!firstInvalidId) firstInvalidId = `service-name-${idx}`;
+        }
+        if (!srv.startingPrice || srv.startingPrice <= 0) {
+          errors[`service_price_${idx}`] = 'Starting price must be greater than 0';
+          if (!firstInvalidId) firstInvalidId = `service-price-${idx}`;
+        }
+      });
+
       const validServices = services.filter((s) => s.nameEn.trim() && s.startingPrice > 0);
-      if (validServices.length === 0) {
-        setErrorMessage('Please provide at least 1 service with a valid starting price');
+      if (validServices.length === 0 || Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setErrorMessage(Object.values(errors)[0] || 'Please provide at least 1 service with a valid starting price');
+        if (firstInvalidId) {
+          setTimeout(() => focusFirstInvalidField([firstInvalidId]), 0);
+        }
         return;
       }
       setStep(4);
@@ -128,7 +197,16 @@ export const SellerRegisterWizard: React.FC = () => {
     const payload: ApplySellerPayload = {
       nameEn: nameEn.trim(),
       nameHi: nameHi.trim() || undefined,
+      email: email.trim().toLowerCase(),
       categories: selectedCategories,
+      requestedCategory:
+        isRequestingCategory && requestedCatNameEn.trim()
+          ? {
+              nameEn: requestedCatNameEn.trim(),
+              nameHi: requestedCatNameHi.trim() || undefined,
+              description: requestedCatDesc.trim() || undefined,
+            }
+          : undefined,
       city: selectedCity,
       area,
       areasServed: areasServed.length > 0 ? areasServed : [area],
@@ -178,23 +256,53 @@ export const SellerRegisterWizard: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-900 mb-2">
           Application Submitted!
         </h2>
-        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+        <p className="text-sm text-slate-600 mb-4 leading-relaxed">
           Thank you for registering <strong className="text-slate-800">{nameEn}</strong>. Our
-          verification team will verify your details and approve your listing shortly.
+          verification team will review your application and approve your listing shortly.
         </p>
 
+        <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-left text-xs text-indigo-950 space-y-1.5 mb-6">
+          <p className="font-bold flex items-center gap-1.5 text-indigo-900">
+            <span>🔑</span> Your Login Credentials After Approval:
+          </p>
+          <p>
+            Email: <strong className="text-indigo-950 font-mono">{email}</strong>
+          </p>
+          <p>
+            Initial Password: <strong className="text-indigo-950 font-mono">Test@123</strong> (assigned automatically when admin approves your listing)
+          </p>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/seller/dashboard">
-            <Button variant="primary" size="md">
-              Go to Seller Dashboard
-            </Button>
-          </Link>
           <Link to="/">
-            <Button variant="outline" size="md">
+            <Button variant="primary" size="md">
               Back to Home
             </Button>
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (user?.role === 'seller' || user?.sellerId) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-8 shadow-sm text-center max-w-xl mx-auto my-8">
+        <div className="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mx-auto mb-4">
+          🏪
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          {language === 'hi' ? 'आप पहले से एक विक्रेता हैं' : 'You are Already Registered'}
+        </h2>
+        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+          {language === 'hi'
+            ? 'आपका व्यवसाय AraKart पर पहले से पंजीकृत है। आप अपने डैशबोर्ड से ऑफर्स, कैटलॉग और लीड्स प्रबंधित कर सकते हैं।'
+            : 'Your business account is already active on AraKart. You can manage your services, offers, and leads directly in your seller dashboard.'}
+        </p>
+        <Link to="/seller/dashboard">
+          <Button variant="primary" size="md">
+            {language === 'hi' ? 'विक्रेता डैशबोर्ड पर जाएं' : 'Go to Seller Dashboard'}
+          </Button>
+        </Link>
       </div>
     );
   }
@@ -236,6 +344,26 @@ export const SellerRegisterWizard: React.FC = () => {
           </p>
 
           <div>
+            <label htmlFor="seller-email" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Email Address (Login ID) *
+            </label>
+            <Input
+              id="seller-email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
+              }}
+              placeholder="e.g. yourname@example.com"
+              error={fieldErrors.email}
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Once approved by admin, you will use this email with initial password <strong>Test@123</strong> to log into your seller dashboard.
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="seller-phone" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
               Mobile Number (Calling) *
             </label>
@@ -243,9 +371,13 @@ export const SellerRegisterWizard: React.FC = () => {
               id="seller-phone"
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: '' }));
+              }}
               placeholder="e.g. 9876543210"
               maxLength={10}
+              error={fieldErrors.phone}
             />
           </div>
 
@@ -257,9 +389,13 @@ export const SellerRegisterWizard: React.FC = () => {
               id="seller-whatsapp"
               type="tel"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={(e) => {
+                setWhatsapp(e.target.value);
+                if (fieldErrors.whatsapp) setFieldErrors((prev) => ({ ...prev, whatsapp: '' }));
+              }}
               placeholder="e.g. 9876543210"
               maxLength={10}
+              error={fieldErrors.whatsapp}
             />
           </div>
         </div>
@@ -278,8 +414,12 @@ export const SellerRegisterWizard: React.FC = () => {
               id="business-name"
               type="text"
               value={nameEn}
-              onChange={(e) => setNameEn(e.target.value)}
+              onChange={(e) => {
+                setNameEn(e.target.value);
+                if (fieldErrors.nameEn) setFieldErrors((prev) => ({ ...prev, nameEn: '' }));
+              }}
               placeholder="e.g. Verma Electricals & Repair"
+              error={fieldErrors.nameEn}
             />
           </div>
 
@@ -297,17 +437,28 @@ export const SellerRegisterWizard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+            <label htmlFor="seller-category-section" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
               Select Categories *
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div
+              id="seller-category-section"
+              tabIndex={-1}
+              className={`flex flex-wrap gap-2 p-2 rounded-xl transition-all ${
+                fieldErrors.categories ? 'ring-1 ring-red-500 bg-red-50/20' : ''
+              }`}
+            >
               {categories.map((cat) => {
                 const isSelected = selectedCategories.includes(cat.slug);
                 return (
                   <button
                     key={cat.id || cat.slug}
                     type="button"
-                    onClick={() => toggleCategory(cat.slug)}
+                    onClick={() => {
+                      toggleCategory(cat.slug);
+                      if (fieldErrors.categories) {
+                        setFieldErrors((prev) => ({ ...prev, categories: '' }));
+                      }
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                       isSelected
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
@@ -318,6 +469,93 @@ export const SellerRegisterWizard: React.FC = () => {
                   </button>
                 );
               })}
+            </div>
+            {fieldErrors.categories && (
+              <p className="text-xs text-red-600 font-medium mt-1">{fieldErrors.categories}</p>
+            )}
+
+            {/* Propose a new category section */}
+            <div className="mt-3">
+              {!isRequestingCategory ? (
+                <button
+                  type="button"
+                  onClick={() => setIsRequestingCategory(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100/80 border border-indigo-200/60 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  <span>✨ Can't find your trade? Propose a new category</span>
+                </button>
+              ) : (
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-3 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                      <span>✨ Propose a New Category</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRequestingCategory(false);
+                        setRequestedCatNameEn('');
+                        setRequestedCatNameHi('');
+                        setRequestedCatDesc('');
+                        if (fieldErrors.requestedCatNameEn) {
+                          setFieldErrors((prev) => ({ ...prev, requestedCatNameEn: '' }));
+                        }
+                      }}
+                      className="text-xs text-slate-500 hover:text-rose-600 font-semibold cursor-pointer"
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    If AraKart does not list your specific trade yet, enter it below. Our admin team will create and approve your category during onboarding!
+                  </p>
+
+                  <div>
+                    <label htmlFor="req-cat-name-en" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Category / Trade Name (English) *
+                    </label>
+                    <Input
+                      id="req-cat-name-en"
+                      type="text"
+                      value={requestedCatNameEn}
+                      onChange={(e) => {
+                        setRequestedCatNameEn(e.target.value);
+                        if (fieldErrors.requestedCatNameEn) {
+                          setFieldErrors((prev) => ({ ...prev, requestedCatNameEn: '' }));
+                        }
+                      }}
+                      placeholder="e.g. CCTV Camera Installation & Maintenance"
+                      error={fieldErrors.requestedCatNameEn}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="req-cat-name-hi" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Category Name (Hindi - Optional)
+                    </label>
+                    <Input
+                      id="req-cat-name-hi"
+                      type="text"
+                      value={requestedCatNameHi}
+                      onChange={(e) => setRequestedCatNameHi(e.target.value)}
+                      placeholder="e.g. सीसीटीवी कैमरा इंस्टॉलेशन और सर्विसिंग"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="req-cat-desc" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Brief Description (Optional)
+                    </label>
+                    <Input
+                      id="req-cat-desc"
+                      type="text"
+                      value={requestedCatDesc}
+                      onChange={(e) => setRequestedCatDesc(e.target.value)}
+                      placeholder="e.g. Security camera installation, wiring, and DVR maintenance"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -332,8 +570,13 @@ export const SellerRegisterWizard: React.FC = () => {
                 onChange={(e) => {
                   setArea(e.target.value);
                   setAreasServed([e.target.value]);
+                  if (fieldErrors.area) setFieldErrors((prev) => ({ ...prev, area: '' }));
                 }}
-                className="w-full text-sm rounded-xl border border-slate-200 p-2.5 bg-slate-50 font-medium"
+                className={`w-full text-sm rounded-xl border p-2.5 font-medium transition-colors ${
+                  fieldErrors.area
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200 bg-slate-50'
+                }`}
               >
                 {availableAreas.map((a) => (
                   <option key={a} value={a}>
@@ -413,7 +656,7 @@ export const SellerRegisterWizard: React.FC = () => {
             <Button
               type="button"
               variant="secondary"
-              size="sm"
+              size="md"
               onClick={handleAddService}
             >
               + Add Service
@@ -424,21 +667,41 @@ export const SellerRegisterWizard: React.FC = () => {
             {services.map((srv, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <input
+                  id={`service-name-${idx}`}
                   type="text"
                   value={srv.nameEn}
-                  onChange={(e) => handleServiceChange(idx, 'nameEn', e.target.value)}
+                  onChange={(e) => {
+                    handleServiceChange(idx, 'nameEn', e.target.value);
+                    if (fieldErrors[`service_name_${idx}`]) {
+                      setFieldErrors((prev) => ({ ...prev, [`service_name_${idx}`]: '' }));
+                    }
+                  }}
                   placeholder="e.g. Fan Repair / Switchboard Fix"
-                  className="flex-1 text-sm rounded-xl border border-slate-200 p-2.5 bg-slate-50 font-medium"
+                  className={`flex-1 text-sm rounded-xl border p-2.5 font-medium transition-colors ${
+                    fieldErrors[`service_name_${idx}`]
+                      ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
                 />
                 <div className="relative w-32">
                   <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
                   <input
+                    id={`service-price-${idx}`}
                     type="number"
                     value={srv.startingPrice}
-                    onChange={(e) => handleServiceChange(idx, 'startingPrice', e.target.value)}
+                    onChange={(e) => {
+                      handleServiceChange(idx, 'startingPrice', e.target.value);
+                      if (fieldErrors[`service_price_${idx}`]) {
+                        setFieldErrors((prev) => ({ ...prev, [`service_price_${idx}`]: '' }));
+                      }
+                    }}
                     placeholder="Price"
                     min={0}
-                    className="w-full text-sm rounded-xl border border-slate-200 pl-7 pr-2.5 py-2.5 bg-slate-50 font-medium"
+                    className={`w-full text-sm rounded-xl border pl-7 pr-2.5 py-2.5 font-medium transition-colors ${
+                      fieldErrors[`service_price_${idx}`]
+                        ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                        : 'border-slate-200 bg-slate-50'
+                    }`}
                   />
                 </div>
                 {services.length > 1 && (
@@ -469,8 +732,17 @@ export const SellerRegisterWizard: React.FC = () => {
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
               <span className="text-slate-500 font-semibold">Categories:</span>
-              <span className="font-bold text-indigo-700 capitalize">
-                {selectedCategories.join(', ')}
+              <span className="font-bold text-indigo-700 capitalize text-right">
+                {selectedCategories.length > 0
+                  ? selectedCategories.join(', ')
+                  : isRequestingCategory && requestedCatNameEn
+                  ? `Proposed: ${requestedCatNameEn}`
+                  : 'None selected'}
+                {selectedCategories.length > 0 && isRequestingCategory && requestedCatNameEn && (
+                  <span className="block text-[11px] text-amber-700 font-medium mt-0.5">
+                    + Proposing new: {requestedCatNameEn}
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
@@ -504,7 +776,7 @@ export const SellerRegisterWizard: React.FC = () => {
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="md"
             onClick={() => setStep(step - 1)}
           >
             Back
@@ -517,7 +789,7 @@ export const SellerRegisterWizard: React.FC = () => {
           <Button
             type="button"
             variant="primary"
-            size="sm"
+            size="md"
             onClick={handleNext}
           >
             Next

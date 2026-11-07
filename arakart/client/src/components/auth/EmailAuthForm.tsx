@@ -11,6 +11,7 @@ import { useUiStore } from '../../store/uiStore';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { CodeInput } from './CodeInput';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export interface EmailAuthFormProps {
   onSuccess: () => void;
@@ -32,22 +33,38 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
   const [devCode, setDevCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
 
   const clearForm = () => {
     setError(null);
+    setFieldErrors({});
     setCode('');
     setDevCode(null);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const errs: Record<string, string> = {};
+    if (!email.trim()) {
+      errs.email = 'Email address is required';
+    } else if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+      errs.email = 'Please enter a valid email address';
+    }
+    if (!password) {
+      errs.password = 'Password is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
       setError('Please fill in both email and password');
+      const firstId = errs.email ? 'auth-login-email' : 'auth-login-password';
+      focusFirstInvalidField([firstId]);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const res = await loginEmail(email, password);
@@ -62,6 +79,8 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
         addToast('Please verify your email to continue', 'info');
       } else {
         setError(msg);
+        setFieldErrors({ email: msg, password: ' ' });
+        focusFirstInvalidField(['auth-login-email']);
       }
     } finally {
       setLoading(false);
@@ -70,29 +89,42 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password) {
-      setError('Please fill in all required fields (Name, Email, and Password)');
-      return;
+    const errs: Record<string, string> = {};
+
+    if (!name.trim()) {
+      errs.name = 'Full name is required';
+    } else if (name.trim().length < 2) {
+      errs.name = 'Name must be at least 2 characters long';
     }
-    if (name.trim().length < 2) {
-      setError('Name must be at least 2 characters long');
-      return;
+
+    if (!email.trim()) {
+      errs.email = 'Email address is required';
+    } else if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+      errs.email = 'Please enter a valid email address';
     }
-    if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
-      setError('Please enter a valid email address');
-      return;
-    }
+
     if (phone.trim() && !/^[6-9]\d{9}$/.test(phone.trim())) {
-      setError('Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9');
-      return;
+      errs.phone = 'Please enter a valid 10-digit Indian mobile number';
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+
+    if (!password) {
+      errs.password = 'Password is required';
+    } else if (password.length < 8) {
+      errs.password = 'Password must be at least 8 characters long';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError('Please fill in all required fields (Name, Email, and Password)');
+      const order = ['auth-reg-name', 'auth-reg-email', 'auth-reg-phone', 'auth-reg-password'];
+      const firstId = order.find((id) => errs[id.replace('auth-reg-', '')]);
+      focusFirstInvalidField([firstId]);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const res = await registerEmail(name.trim(), email.trim(), password, phone.trim() || undefined);
@@ -109,6 +141,8 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
       addToast('Verification code sent to your email', 'info');
     } catch (err: any) {
       setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed');
+      setFieldErrors({ email: err.response?.data?.error });
+      focusFirstInvalidField(['auth-reg-email']);
     } finally {
       setLoading(false);
     }
@@ -138,23 +172,30 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setError('Please enter your registered email');
+    if (!email.trim() || !/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+      const msg = 'Please enter a valid registered email address';
+      setError(msg);
+      setFieldErrors({ email: msg });
+      focusFirstInvalidField(['auth-forgot-email']);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
-      const res = await forgotPassword(email);
+      const res = await forgotPassword(email.trim());
       if (res.devCode) {
         setDevCode(res.devCode);
       }
       setMode('reset-password');
       addToast('Password reset code sent to your email', 'info');
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to send reset code');
+      const msg = err.response?.data?.error || err.message || 'Failed to send reset code';
+      setError(msg);
+      setFieldErrors({ email: msg });
+      focusFirstInvalidField(['auth-forgot-email']);
     } finally {
       setLoading(false);
     }
@@ -162,21 +203,28 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errs: Record<string, string> = {};
     if (code.length !== 6) {
-      setError('Please enter the 6-digit reset code');
-      return;
+      errs.code = 'Please enter the 6-digit reset code';
     }
-    if (password.length < 8) {
-      setError('New password must be at least 8 characters');
-      return;
+    if (!password || password.length < 8) {
+      errs.password = 'New password must be at least 8 characters';
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      errs.confirmPassword = 'Passwords do not match';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError(Object.values(errs)[0]);
+      const firstId = errs.password ? 'auth-reset-password' : 'auth-reset-confirm';
+      focusFirstInvalidField([firstId]);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       await resetPassword(email, code, password);
@@ -253,6 +301,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
         </p>
 
         <Input
+          id="auth-forgot-email"
           label="Email Address"
           name="email"
           type="email"
@@ -261,12 +310,13 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           onChange={(e) => {
             setEmail(e.target.value);
             if (error) setError(null);
+            if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
           }}
-          error={error || undefined}
+          error={fieldErrors.email || error || undefined}
           autoFocus
         />
 
-        <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
+        <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
           Send Reset Code
         </Button>
 
@@ -316,26 +366,36 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
         </div>
 
         <Input
+          id="auth-reset-password"
           label="New Password"
           name="newPassword"
           type="password"
           placeholder="At least 8 characters"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+          }}
+          error={fieldErrors.password}
         />
 
         <Input
+          id="auth-reset-confirm"
           label="Confirm New Password"
           name="confirmPassword"
           type="password"
           placeholder="Repeat new password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+          }}
+          error={fieldErrors.confirmPassword}
         />
 
         {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-        <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
+        <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
           Reset Password
         </Button>
 
@@ -360,45 +420,65 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
     return (
       <form onSubmit={handleRegister} className="space-y-4">
         <Input
+          id="auth-reg-name"
           label="Full Name"
           name="name"
           type="text"
           placeholder="e.g. Ramesh Kumar"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+          }}
+          error={fieldErrors.name}
           autoFocus
         />
 
         <Input
+          id="auth-reg-email"
           label="Email Address"
           name="email"
           type="email"
           placeholder="your.email@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+          }}
+          error={fieldErrors.email}
         />
 
         <Input
+          id="auth-reg-phone"
           label="Mobile Number (Optional — for direct service contact)"
           name="phone"
           type="tel"
           placeholder="10-digit mobile number (e.g. 9876543210)"
           value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+          onChange={(e) => {
+            setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+            if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+          }}
+          error={fieldErrors.phone}
         />
 
         <Input
+          id="auth-reg-password"
           label="Password"
           name="password"
           type="password"
           placeholder="At least 8 characters"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+          }}
+          error={fieldErrors.password}
         />
 
         {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-        <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
+        <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
           Create Account
         </Button>
 
@@ -423,6 +503,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
   return (
     <form onSubmit={handleLogin} className="space-y-4">
       <Input
+        id="auth-login-email"
         label="Email Address"
         name="email"
         type="email"
@@ -431,12 +512,15 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
         onChange={(e) => {
           setEmail(e.target.value);
           if (error) setError(null);
+          if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
         }}
+        error={fieldErrors.email}
         autoFocus
       />
 
       <div>
         <Input
+          id="auth-login-password"
           label="Password"
           name="password"
           type="password"
@@ -445,7 +529,9 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           onChange={(e) => {
             setPassword(e.target.value);
             if (error) setError(null);
+            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
           }}
+          error={fieldErrors.password}
         />
         <div className="flex justify-end mt-1">
           <button
@@ -463,7 +549,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
       {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-      <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
+      <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
         Sign In
       </Button>
 

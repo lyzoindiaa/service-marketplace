@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User.model';
 import { Provider } from '../models/Provider.model';
 import { Lead } from '../models/Lead.model';
@@ -87,7 +88,147 @@ export class AdminService {
     provider.status = 'approved';
     provider.isLive = true;
     provider.verified = true;
+    if (provider.requestedCategory && provider.requestedCategory.status === 'pending') {
+      provider.requestedCategory.status = 'approved';
+    }
     await provider.save();
+
+    // Automatically activate the city market if it was draft/hidden
+    if (provider.city) {
+      await City.updateOne(
+        { slug: provider.city.toLowerCase().trim() },
+        { isLive: true }
+      );
+    }
+
+    // Assign seller role and default login password Test@123 if user has no password
+    const user = await User.findById(provider.owner);
+    if (user) {
+      user.role = 'seller';
+      user.sellerId = provider._id as any;
+      if (!user.passwordHash) {
+        user.passwordHash = await bcrypt.hash('Test@123', 10);
+      }
+      user.emailVerified = true;
+      if (user.email && !user.authMethods.includes('email')) {
+        user.authMethods.push('email');
+      }
+      await user.save();
+    }
+
+    return provider.toJSON();
+  }
+
+  async approveSellerWithCategory(
+    providerId: string,
+    options: {
+      action: 'create' | 'remap';
+      categoryData?: {
+        nameEn: string;
+        nameHi?: string;
+        icon?: string;
+        slug?: string;
+      };
+      targetCategorySlug?: string;
+    }
+  ): Promise<any> {
+    const provider = await Provider.findById(providerId);
+    if (!provider) {
+      const err: any = new Error('Provider not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    let assignedSlug: string;
+
+    if (options.action === 'create') {
+      const { nameEn, nameHi, icon, slug } = options.categoryData || {};
+      if (!nameEn || nameEn.trim().length < 2) {
+        const err: any = new Error('Category English name is required (min 2 characters)');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const generatedSlug =
+        (slug && slug.trim()) ||
+        nameEn
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+
+      assignedSlug = generatedSlug;
+
+      let category = await Category.findOne({ slug: assignedSlug });
+      if (!category) {
+        category = await Category.create({
+          slug: assignedSlug,
+          nameEn: nameEn.trim(),
+          nameHi: (nameHi && nameHi.trim()) || nameEn.trim(),
+          icon: (icon && icon.trim()) || '🔧',
+          enabled: true,
+        });
+      }
+
+      if (provider.requestedCategory) {
+        provider.requestedCategory.status = 'approved';
+      }
+    } else if (options.action === 'remap') {
+      const targetSlug = options.targetCategorySlug?.trim().toLowerCase();
+      if (!targetSlug) {
+        const err: any = new Error('Target category slug is required for remapping');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const category = await Category.findOne({ slug: targetSlug });
+      if (!category) {
+        const err: any = new Error(`Target category '${targetSlug}' not found`);
+        err.statusCode = 404;
+        throw err;
+      }
+
+      assignedSlug = targetSlug;
+
+      if (provider.requestedCategory) {
+        provider.requestedCategory.status = 'remapped';
+      }
+    } else {
+      const err: any = new Error("Invalid action. Must be 'create' or 'remap'");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const existingCats = provider.categories || [];
+    if (!existingCats.includes(assignedSlug)) {
+      provider.categories = [...existingCats, assignedSlug];
+    }
+
+    provider.status = 'approved';
+    provider.isLive = true;
+    provider.verified = true;
+    await provider.save();
+
+    if (provider.city) {
+      await City.updateOne(
+        { slug: provider.city.toLowerCase().trim() },
+        { isLive: true }
+      );
+    }
+
+    const user = await User.findById(provider.owner);
+    if (user) {
+      user.role = 'seller';
+      user.sellerId = provider._id as any;
+      if (!user.passwordHash) {
+        user.passwordHash = await bcrypt.hash('Test@123', 10);
+      }
+      user.emailVerified = true;
+      if (user.email && !user.authMethods.includes('email')) {
+        user.authMethods.push('email');
+      }
+      await user.save();
+    }
 
     return provider.toJSON();
   }
@@ -146,7 +287,7 @@ export class AdminService {
     };
   }
 
-  async suspendUser(userId: string, suspended: boolean): Promise<any> {
+  async suspendUser(userId: string, suspended: boolean, adminUserId?: string): Promise<any> {
     const user = await User.findById(userId);
     if (!user) {
       const err: any = new Error('User not found');

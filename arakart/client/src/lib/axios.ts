@@ -73,6 +73,12 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // If user wasn't authenticated with an access token, don't attempt silent refresh
+      if (!useAuthStore.getState().accessToken) {
+        useAuthStore.getState().clearAuth();
+        return Promise.reject(error);
+      }
+
       // If already retried once, reject
       if (originalRequest._retry) {
         useAuthStore.getState().clearAuth();
@@ -121,7 +127,8 @@ api.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         useAuthStore.getState().clearAuth();
-        return Promise.reject(refreshErr);
+        // Reject with the original request's error so the UI shows the real cause rather than an internal refresh token error
+        return Promise.reject(error);
       } finally {
         isRefreshing = false;
       }

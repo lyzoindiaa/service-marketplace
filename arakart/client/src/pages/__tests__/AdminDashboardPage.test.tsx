@@ -209,6 +209,37 @@ describe('AdminDashboardPage (FE-010)', () => {
     });
   });
 
+  it('shows user list with self-admin row displaying "Cannot suspend self" instead of suspend button', async () => {
+    vi.mocked(adminService.fetchAdminUsers).mockResolvedValueOnce({
+      users: [
+        {
+          id: 'usr_admin',
+          name: 'Super Admin',
+          email: 'admin@arakart.local',
+          role: 'admin' as const,
+          suspended: false,
+          createdAt: new Date().toISOString(),
+        },
+        ...mockUsers.users,
+      ],
+      pagination: { page: 1, limit: 10, total: 3, pages: 1 },
+    });
+
+    renderAdmin();
+
+    await waitFor(() => {
+      expect(screen.getByText('48')).toBeInTheDocument();
+    });
+
+    const usersTab = screen.getByRole('button', { name: /user management/i });
+    fireEvent.click(usersTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Super Admin')).toBeInTheDocument();
+      expect(screen.getByText('Cannot suspend self')).toBeInTheDocument();
+    });
+  });
+
   it('navigates to Abuse Reports and resolves an open report', async () => {
     vi.mocked(adminService.resolveAdminReport).mockResolvedValueOnce({
       ...mockReports.reports[0],
@@ -234,6 +265,37 @@ describe('AdminDashboardPage (FE-010)', () => {
 
     await waitFor(() => {
       expect(adminService.resolveAdminReport).toHaveBeenCalledWith('rep_1', 'resolved', expect.any(String));
+    });
+  });
+
+  it('navigates to separate Categories and Cities tabs', async () => {
+    vi.mocked(discoveryService.fetchCategories).mockResolvedValueOnce([
+      { id: 'cat_1', nameEn: 'Electrician', nameHi: 'इलेक्ट्रीशियन', slug: 'electrician', icon: '⚡', enabled: true },
+    ]);
+    vi.mocked(discoveryService.fetchCities).mockResolvedValueOnce([
+      { id: 'city_1', nameEn: 'Ara', nameHi: 'आरा', slug: 'ara', stateEn: 'Bihar', stateHi: 'बिहार', isLive: true },
+    ]);
+
+    renderAdmin();
+
+    await waitFor(() => {
+      expect(screen.getByText('48')).toBeInTheDocument();
+    });
+
+    // Test Categories tab
+    const catTab = screen.getByRole('button', { name: /Categories/i });
+    fireEvent.click(catTab);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Service Categories/i })).toBeInTheDocument();
+    });
+
+    // Test Cities tab
+    const cityTab = screen.getByRole('button', { name: /Cities/i });
+    fireEvent.click(cityTab);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Launch Cities/i })).toBeInTheDocument();
     });
   });
 });

@@ -9,6 +9,11 @@ vi.mock('../../services/providerService', () => ({
   getProviderById: vi.fn(),
 }));
 
+vi.mock('../../services/offerService', () => ({
+  fetchPublicOffers: vi.fn().mockResolvedValue([]),
+  applyOffer: vi.fn(),
+}));
+
 vi.mock('../../services/reviewService', () => ({
   fetchProviderReviews: vi.fn(),
   submitReview: vi.fn(),

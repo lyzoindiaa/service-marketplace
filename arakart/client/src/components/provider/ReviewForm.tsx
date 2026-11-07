@@ -3,6 +3,7 @@ import { submitReview, ReviewItemData } from '../../services/reviewService';
 import { Button } from '../common/Button';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export interface ReviewFormProps {
   providerId: string;
@@ -21,6 +22,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
+  const [commentError, setCommentError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setCommentError(false);
 
     if (rating < 1 || rating > 5) {
       setErrorMessage('Please select a star rating between 1 and 5');
@@ -56,7 +59,9 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     }
 
     if (!comment.trim() || comment.trim().length < 3) {
+      setCommentError(true);
       setErrorMessage('Review comment must be at least 3 characters');
+      setTimeout(() => focusFirstInvalidField(['review-comment']), 0);
       return;
     }
 
@@ -153,14 +158,22 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
           id="review-comment"
           rows={3}
           value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          onChange={(e) => {
+            setComment(e.target.value);
+            if (commentError) setCommentError(false);
+            if (errorMessage) setErrorMessage(null);
+          }}
           maxLength={1000}
           placeholder={
             language === 'hi'
               ? 'इस सेवा प्रदाता के साथ अपने अनुभव को साझा करें...'
               : 'Share your experience with this service provider...'
           }
-          className="w-full text-sm rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none font-medium"
+          className={`w-full text-sm rounded-xl border p-3 resize-none font-medium transition-colors ${
+            commentError
+              ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+              : 'border-slate-200 bg-slate-50/50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+          }`}
         />
         <div className="flex justify-end mt-1">
           <span className="text-[11px] text-slate-400">{comment.length}/1000</span>
@@ -171,7 +184,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         <Button
           type="submit"
           variant="primary"
-          size="sm"
+          size="md"
           loading={isSubmitting}
         >
           {language === 'hi' ? 'समीक्षा सबमिट करें' : 'Submit Review'}

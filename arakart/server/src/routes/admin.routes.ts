@@ -3,6 +3,7 @@ import {
   getDashboardStats,
   getPendingSellers,
   approveSeller,
+  approveSellerWithCategory,
   rejectSeller,
   getUsers,
   suspendUser,
@@ -20,6 +21,7 @@ router.use(verifyToken, requireRole('admin'));
 router.get('/dashboard', getDashboardStats);
 router.get('/sellers/pending', getPendingSellers);
 router.post('/sellers/:id/approve', approveSeller);
+router.post('/sellers/:id/approve-category', approveSellerWithCategory);
 router.post('/sellers/:id/reject', rejectSeller);
 router.get('/users', getUsers);
 router.patch('/users/:id/suspend', suspendUser);

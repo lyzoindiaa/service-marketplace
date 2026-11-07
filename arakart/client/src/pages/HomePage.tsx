@@ -30,7 +30,7 @@ export const HomePage: React.FC = () => {
   const [areas, setAreas] = useState<string[]>([]);
   const [publicStats, setPublicStats] = useState<PublicStatsResponse>({
     verifiedProvidersCount: 0,
-    categoriesCount: 8,
+    categoriesCount: 0,
     avgRating: 0,
     totalReviews: 0,
     recentReviews: [],

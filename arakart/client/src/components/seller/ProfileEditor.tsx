@@ -1,13 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   updateSellerProfile,
   uploadSellerPhoto,
   deleteSellerPhoto,
 } from '../../services/sellerService';
 import { ProviderProfile } from '../../services/providerService';
+import { fetchCategories, CategoryItem } from '../../services/discoveryService';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { useUiStore } from '../../store/uiStore';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export interface ProfileEditorProps {
   profile: ProviderProfile;
@@ -22,6 +24,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
 
   const [nameEn, setNameEn] = useState(profile.nameEn || '');
   const [area, setArea] = useState(profile.area || '');
+  const [categories, setCategories] = useState<string[]>(profile.categories || []);
+  const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
   const [whatsapp, setWhatsapp] = useState(profile.whatsapp || '');
   const [bioEn, setBioEn] = useState(profile.bioEn || '');
   const [experience, setExperience] = useState(profile.experience || 0);
@@ -30,7 +34,12 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
   const [photos, setPhotos] = useState<string[]>(profile.photos || []);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchCategories().then(setAvailableCategories).catch(() => {});
+  }, []);
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,13 +89,44 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+
+    if (!nameEn.trim() || nameEn.trim().length < 3) {
+      errors.nameEn = 'Business name must be at least 3 characters';
+    }
+    if (!area.trim() || area.trim().length < 2) {
+      errors.area = 'Primary area is required (at least 2 characters)';
+    }
+    if (categories.length === 0) {
+      errors.categories = 'Please select at least 1 service category';
+    }
+    if (whatsapp.trim()) {
+      const cleanWhatsapp = whatsapp.replace(/\D/g, '');
+      if (cleanWhatsapp.length !== 10) {
+        errors.whatsapp = 'Please enter a valid 10-digit WhatsApp number';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const invalidIds: string[] = [];
+      if (errors.nameEn) invalidIds.push('edit-name');
+      if (errors.area) invalidIds.push('edit-area');
+      if (errors.whatsapp) invalidIds.push('edit-whatsapp');
+      setTimeout(() => focusFirstInvalidField(invalidIds), 0);
+      addToast(Object.values(errors)[0], 'error');
+      return;
+    }
+
+    setFieldErrors({});
     setIsSaving(true);
     try {
       const updated = await updateSellerProfile({
-        nameEn,
-        area,
-        whatsapp,
-        bioEn,
+        nameEn: nameEn.trim(),
+        area: area.trim(),
+        categories,
+        whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : '',
+        bioEn: bioEn.trim(),
         experience,
         workingHours,
         isAllDay,
@@ -119,7 +159,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <Input
           id="edit-name"
           value={nameEn}
-          onChange={(e) => setNameEn(e.target.value)}
+          onChange={(e) => {
+            setNameEn(e.target.value);
+            if (fieldErrors.nameEn) setFieldErrors((prev) => ({ ...prev, nameEn: '' }));
+          }}
+          error={fieldErrors.nameEn}
         />
       </div>
 
@@ -131,7 +175,11 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <Input
             id="edit-area"
             value={area}
-            onChange={(e) => setArea(e.target.value)}
+            onChange={(e) => {
+              setArea(e.target.value);
+              if (fieldErrors.area) setFieldErrors((prev) => ({ ...prev, area: '' }));
+            }}
+            error={fieldErrors.area}
           />
         </div>
 
@@ -142,8 +190,51 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <Input
             id="edit-whatsapp"
             value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
+            onChange={(e) => {
+              setWhatsapp(e.target.value);
+              if (fieldErrors.whatsapp) setFieldErrors((prev) => ({ ...prev, whatsapp: '' }));
+            }}
+            error={fieldErrors.whatsapp}
           />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+          Service Categories
+        </label>
+        <p className="text-xs text-slate-500 mb-2.5">
+          Select all categories of services you provide so customers can discover you.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {availableCategories.map((cat) => {
+            const isSelected = categories.includes(cat.slug);
+            return (
+              <button
+                key={cat.slug}
+                type="button"
+                onClick={() => {
+                  if (isSelected) {
+                    if (categories.length > 1) {
+                      setCategories(categories.filter((c) => c !== cat.slug));
+                    } else {
+                      addToast('At least 1 category is required', 'error');
+                    }
+                  } else {
+                    setCategories([...categories, cat.slug]);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-xs ring-1 ring-indigo-500'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+              >
+                <span>{cat.nameEn}</span>
+                {isSelected && <span className="text-indigo-600 font-bold ml-0.5">✓</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -218,7 +309,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="md"
             disabled={photos.length >= 6 || isUploadingPhoto}
             loading={isUploadingPhoto}
             onClick={() => fileInputRef.current?.click()}

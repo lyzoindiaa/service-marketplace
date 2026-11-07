@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
@@ -8,7 +8,8 @@ import { Button } from '../common/Button';
 export const Header: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, clearAuth } = useAuthStore();
+  const location = useLocation();
+  const { user, logout } = useAuthStore();
   const {
     openAuthModal,
     openCityModal,
@@ -21,6 +22,12 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
+  const isSuperAdmin =
+    user?.role === 'admin' ||
+    (user?.role as string) === 'superadmin' ||
+    (user?.role as string) === 'super_admin';
+  const isSeller = user?.role === 'seller';
+
   const cityDisplay =
     i18n.language === 'hi' ? selectedCityNameHi || selectedCityName : selectedCityName;
   const stateDisplay =
@@ -32,8 +39,12 @@ export const Header: React.FC = () => {
     setLanguage(nextLang);
   };
 
-  const handleLogout = () => {
-    clearAuth();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Ignored: client state is cleared even if network fails
+    }
     setUserDropdownOpen(false);
     navigate('/');
   };
@@ -76,38 +87,97 @@ export const Header: React.FC = () => {
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 shrink-0">
             <Link
               to="/"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
+              className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                location.pathname === '/'
+                  ? 'text-indigo-600 font-bold'
+                  : 'text-slate-700 hover:text-indigo-600'
+              }`}
             >
               {t('home')}
             </Link>
-            <Link
-              to="/search"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
-            >
-              {t('browse')}
-            </Link>
-            <Link
-              to="/offers"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1 whitespace-nowrap"
-            >
-              <span>🔥</span>
-              <span>{i18n.language === 'hi' ? 'ऑफ़र' : 'Offers'}</span>
-            </Link>
-            <Link
-              to="/blogs"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors whitespace-nowrap"
-            >
-              {i18n.language === 'hi' ? 'ब्लॉग' : 'Blogs'}
-            </Link>
-            <Link
-              to="/register-seller"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <span>{t('becomeSeller')}</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-100 text-amber-800">
-                Free
-              </span>
-            </Link>
+
+            {isSuperAdmin ? (
+              <>
+                <Link
+                  to="/admin"
+                  className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                    location.pathname.startsWith('/admin')
+                      ? 'text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:text-indigo-600'
+                  }`}
+                >
+                  {t('adminConsole')}
+                </Link>
+                {user?.sellerId && (
+                  <Link
+                    to="/seller/dashboard"
+                    className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                      location.pathname.startsWith('/seller/dashboard')
+                        ? 'text-indigo-600 font-bold'
+                        : 'text-slate-700 hover:text-indigo-600'
+                    }`}
+                  >
+                    {t('sellerDashboard')}
+                  </Link>
+                )}
+              </>
+            ) : isSeller ? (
+              <>
+                <Link
+                  to="/seller/dashboard"
+                  className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                    location.pathname.startsWith('/seller/dashboard')
+                      ? 'text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:text-indigo-600'
+                  }`}
+                >
+                  {t('sellerDashboard')}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/search"
+                  className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                    location.pathname === '/search'
+                      ? 'text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:text-indigo-600'
+                  }`}
+                >
+                  {t('browse')}
+                </Link>
+                <Link
+                  to="/offers"
+                  className={`text-sm font-semibold transition-colors flex items-center gap-1 whitespace-nowrap ${
+                    location.pathname === '/offers'
+                      ? 'text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:text-indigo-600'
+                  }`}
+                >
+                  <span>🔥</span>
+                  <span>{i18n.language === 'hi' ? 'ऑफ़र' : 'Offers'}</span>
+                </Link>
+                <Link
+                  to="/blogs"
+                  className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                    location.pathname.startsWith('/blogs')
+                      ? 'text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:text-indigo-600'
+                  }`}
+                >
+                  {i18n.language === 'hi' ? 'ब्लॉग' : 'Blogs'}
+                </Link>
+                <Link
+                  to="/register-seller"
+                  className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <span>{t('becomeSeller')}</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-100 text-amber-800">
+                    Free
+                  </span>
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Right Action Controls */}
@@ -116,7 +186,7 @@ export const Header: React.FC = () => {
             <button
               onClick={toggleLanguage}
               aria-label="Switch language"
-              className="px-2 sm:px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1 whitespace-nowrap shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="h-[42px] px-3 text-xs font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1 whitespace-nowrap shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
               <span className="text-xs sm:text-sm">🌐</span>
               <span className="sm:hidden">{i18n.language === 'en' ? 'हिं' : 'EN'}</span>
@@ -156,31 +226,42 @@ export const Header: React.FC = () => {
                       <p className="text-xs text-slate-500 truncate">{user.phone || user.email}</p>
                     </div>
 
-                    <Link
-                      to="/profile"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
-                    >
-                      My Profile
-                    </Link>
-
-                    {user.role === 'seller' && (
+                    {user.role === 'customer' && (
                       <Link
-                        to="/seller/dashboard"
+                        to="/favourites"
                         onClick={() => setUserDropdownOpen(false)}
                         className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
                       >
-                        Seller Dashboard
+                        {t('savedProviders', 'Saved Providers')}
                       </Link>
                     )}
 
-                    {user.role === 'admin' && (
+                    {isSeller && (
+                      <>
+                        <Link
+                          to="/seller/dashboard"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                        >
+                          {t('sellerDashboard')}
+                        </Link>
+                        <Link
+                          to="/seller/dashboard?tab=profile"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                        >
+                          {i18n.language === 'hi' ? 'प्रोफ़ाइल संपादित करें' : 'Edit Profile'}
+                        </Link>
+                      </>
+                    )}
+
+                    {isSuperAdmin && (
                       <Link
                         to="/admin"
                         onClick={() => setUserDropdownOpen(false)}
                         className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
                       >
-                        Admin Portal
+                        {t('adminConsole')}
                       </Link>
                     )}
 
@@ -198,10 +279,10 @@ export const Header: React.FC = () => {
             ) : (
               <Button
                 variant="primary"
-                size="sm"
+                size="md"
                 onClick={openAuthModal}
                 aria-label="Login"
-                className="!px-2.5 !py-1.5 sm:!text-sm sm:!px-4 sm:!py-2 whitespace-nowrap shrink-0"
+                className="whitespace-nowrap shrink-0"
               >
                 <span className="sm:hidden">{i18n.language === 'en' ? 'Login' : 'लॉग इन'}</span>
                 <span className="hidden sm:inline">{t('login')}</span>
@@ -237,38 +318,88 @@ export const Header: React.FC = () => {
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+              className={`block px-3 py-2 rounded-xl text-base font-semibold ${
+                location.pathname === '/'
+                  ? 'bg-indigo-50 text-indigo-600 font-bold'
+                  : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600'
+              }`}
             >
               {t('home')}
             </Link>
-            <Link
-              to="/search"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              {t('browse')}
-            </Link>
-            <Link
-              to="/offers"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              🔥 {i18n.language === 'hi' ? 'सेवा ऑफ़र' : 'Service Offers'}
-            </Link>
-            <Link
-              to="/blogs"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              📰 {i18n.language === 'hi' ? 'ब्लॉग और गाइड' : 'Blogs & Guides'}
-            </Link>
-            <Link
-              to="/register-seller"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
-            >
-              {t('becomeSeller')}
-            </Link>
+
+            {isSuperAdmin ? (
+              <>
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-xl text-base font-semibold ${
+                    location.pathname.startsWith('/admin')
+                      ? 'bg-indigo-50 text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600'
+                  }`}
+                >
+                  ⚡ {t('adminConsole')}
+                </Link>
+                {user?.sellerId && (
+                  <Link
+                    to="/seller/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-xl text-base font-semibold ${
+                      location.pathname.startsWith('/seller/dashboard')
+                        ? 'bg-indigo-50 text-indigo-600 font-bold'
+                        : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600'
+                    }`}
+                  >
+                    🏪 {t('sellerDashboard')}
+                  </Link>
+                )}
+              </>
+            ) : isSeller ? (
+              <>
+                <Link
+                  to="/seller/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-xl text-base font-semibold ${
+                    location.pathname.startsWith('/seller/dashboard')
+                      ? 'bg-indigo-50 text-indigo-600 font-bold'
+                      : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-600'
+                  }`}
+                >
+                  🏪 {t('sellerDashboard')}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/search"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  {t('browse')}
+                </Link>
+                <Link
+                  to="/offers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  🔥 {i18n.language === 'hi' ? 'सेवा ऑफ़र' : 'Service Offers'}
+                </Link>
+                <Link
+                  to="/blogs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  📰 {i18n.language === 'hi' ? 'ब्लॉग और गाइड' : 'Blogs & Guides'}
+                </Link>
+                <Link
+                  to="/register-seller"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  {t('becomeSeller')}
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

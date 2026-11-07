@@ -96,7 +96,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <button
         type="submit"
         aria-label="Search"
-        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base shrink-0 active:scale-95"
+        className="w-full sm:w-auto h-[42px] min-h-[42px] min-w-[120px] px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base shrink-0 active:scale-95"
       >
         <Search className="w-4 h-4" />
         <span>Search</span>

@@ -3,6 +3,7 @@ import { updateSellerCatalogue } from '../../services/sellerService';
 import { ProviderServiceItem } from '../../services/providerService';
 import { Button } from '../common/Button';
 import { useUiStore } from '../../store/uiStore';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 export interface CatalogueEditorProps {
   initialServices: ProviderServiceItem[];
@@ -18,6 +19,7 @@ export const CatalogueEditor: React.FC<CatalogueEditorProps> = ({
     initialServices.length > 0 ? initialServices : [{ nameEn: '', startingPrice: 150 }]
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleAdd = () => {
     setServices([...services, { nameEn: '', startingPrice: 150 }]);
@@ -39,21 +41,45 @@ export const CatalogueEditor: React.FC<CatalogueEditorProps> = ({
       [field]: field === 'startingPrice' ? Number(val) || 0 : val,
     };
     setServices(updated);
+    if (field === 'nameEn' && errors[`srv_name_${index}`]) {
+      setErrors((prev) => ({ ...prev, [`srv_name_${index}`]: '' }));
+    }
+    if (field === 'startingPrice' && errors[`srv_price_${index}`]) {
+      setErrors((prev) => ({ ...prev, [`srv_price_${index}`]: '' }));
+    }
   };
 
   const handleSave = async () => {
-    const validServices = services.filter(
-      (s) => s.nameEn.trim().length > 0 && s.startingPrice > 0
-    );
+    const errs: Record<string, string> = {};
+    let firstInvalidId: string | null = null;
 
-    if (validServices.length === 0) {
-      addToast('Please provide at least 1 valid service with price', 'error');
+    services.forEach((s, idx) => {
+      if (!s.nameEn.trim()) {
+        errs[`srv_name_${idx}`] = 'Service name is required';
+        if (!firstInvalidId) firstInvalidId = `cat-service-name-${idx}`;
+      }
+      if (!s.startingPrice || s.startingPrice <= 0) {
+        errs[`srv_price_${idx}`] = 'Starting price must be greater than 0';
+        if (!firstInvalidId) firstInvalidId = `cat-service-price-${idx}`;
+      }
+    });
+
+    if (services.length === 0 || Object.keys(errs).length > 0) {
+      setErrors(errs);
+      addToast(
+        Object.values(errs)[0] || 'Please provide at least 1 valid service with price',
+        'error'
+      );
+      if (firstInvalidId) {
+        setTimeout(() => focusFirstInvalidField([firstInvalidId]), 0);
+      }
       return;
     }
 
+    setErrors({});
     setIsSaving(true);
     try {
-      const res = await updateSellerCatalogue(validServices);
+      const res = await updateSellerCatalogue(services);
       onCatalogueUpdated(res.services);
       addToast('Services catalogue updated successfully!', 'success');
     } catch (err: any) {
@@ -74,7 +100,7 @@ export const CatalogueEditor: React.FC<CatalogueEditorProps> = ({
             Prices shown on your public listing to customers.
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleAdd}>
+        <Button variant="secondary" size="md" onClick={handleAdd}>
           + Add Service
         </Button>
       </div>
@@ -86,28 +112,38 @@ export const CatalogueEditor: React.FC<CatalogueEditorProps> = ({
             className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row items-center gap-3"
           >
             <div className="flex-1 w-full">
-              <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                Service Name (English)
+              <label htmlFor={`cat-service-name-${idx}`} className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                Service Name (English) *
               </label>
               <input
+                id={`cat-service-name-${idx}`}
                 type="text"
                 value={srv.nameEn}
                 onChange={(e) => handleChange(idx, 'nameEn', e.target.value)}
                 placeholder="e.g. Ceiling Fan Bearing Change"
-                className="w-full text-xs rounded-lg border border-slate-200 p-2 bg-white font-medium"
+                className={`w-full text-xs rounded-lg border p-2 font-medium transition-colors ${
+                  errors[`srv_name_${idx}`]
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200 bg-white'
+                }`}
               />
             </div>
 
             <div className="w-full sm:w-36">
-              <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                Starting Price (₹)
+              <label htmlFor={`cat-service-price-${idx}`} className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                Starting Price (₹) *
               </label>
               <input
+                id={`cat-service-price-${idx}`}
                 type="number"
                 value={srv.startingPrice}
                 onChange={(e) => handleChange(idx, 'startingPrice', e.target.value)}
                 min={0}
-                className="w-full text-xs rounded-lg border border-slate-200 p-2 bg-white font-medium"
+                className={`w-full text-xs rounded-lg border p-2 font-medium transition-colors ${
+                  errors[`srv_price_${idx}`]
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200 bg-white'
+                }`}
               />
             </div>
 

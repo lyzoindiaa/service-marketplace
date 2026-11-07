@@ -69,6 +69,25 @@ export const approveSeller = async (id: string): Promise<any> => {
   return res.data.data;
 };
 
+export interface ApproveWithCategoryPayload {
+  action: 'create' | 'remap';
+  categoryData?: {
+    nameEn: string;
+    nameHi?: string;
+    icon?: string;
+    slug?: string;
+  };
+  targetCategorySlug?: string;
+}
+
+export const approveSellerWithCategory = async (
+  id: string,
+  payload: ApproveWithCategoryPayload
+): Promise<any> => {
+  const res = await api.post(`/admin/sellers/${id}/approve-category`, payload);
+  return res.data.data;
+};
+
 export const rejectSeller = async (id: string, reason?: string): Promise<any> => {
   const res = await api.post(`/admin/sellers/${id}/reject`, { reason });
   return res.data.data;

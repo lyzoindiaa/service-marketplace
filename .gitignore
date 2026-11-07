@@ -11,6 +11,7 @@
 
 # ── Local database & runtime data ──────────────────────────
 /mongodb-data/
+/data/
 *.log
 
 # ── Node / npm ─────────────────────────────────────────────
