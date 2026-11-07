@@ -126,18 +126,22 @@ export const HomePage: React.FC = () => {
               {publicStats.verifiedProvidersCount}
             </div>
             <div className="text-xs text-slate-500 font-medium mt-0.5">
-              Verified Service Providers
+              {language === 'hi' ? 'सत्यापित सेवा प्रदाता (Verified Service Providers)' : 'Verified Service Providers'}
             </div>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600">
               {publicStats.categoriesCount}
             </div>
-            <div className="text-xs text-slate-500 font-medium mt-0.5">Service Categories</div>
+            <div className="text-xs text-slate-500 font-medium mt-0.5">
+              {language === 'hi' ? 'सेवा श्रेणियाँ (Service Categories)' : 'Service Categories'}
+            </div>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600">100%</div>
-            <div className="text-xs text-slate-500 font-medium mt-0.5">Direct Contact (0% Fee)</div>
+            <div className="text-xs text-slate-500 font-medium mt-0.5">
+              {language === 'hi' ? 'सीधा संपर्क (0% शुल्क)' : 'Direct Contact (0% Fee)'}
+            </div>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600">

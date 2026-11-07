@@ -165,7 +165,7 @@ export const AdminBlogsManager: React.FC = () => {
         <Button
           size="md"
           variant={showForm ? 'outline' : 'primary'}
-          className="w-40 min-w-[160px]"
+          className="w-full sm:w-40 sm:min-w-[160px]"
           onClick={() => {
             if (showForm) {
               resetForm();
@@ -295,7 +295,7 @@ export const AdminBlogsManager: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
             <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -306,12 +306,12 @@ export const AdminBlogsManager: React.FC = () => {
               Publish immediately to /blogs
             </label>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
                 type="button"
                 variant="outline"
                 size="md"
-                className="w-40 min-w-[160px]"
+                className="w-full sm:w-40 sm:min-w-[160px]"
                 onClick={resetForm}
               >
                 Close
@@ -320,7 +320,7 @@ export const AdminBlogsManager: React.FC = () => {
                 type="submit"
                 variant="primary"
                 size="md"
-                className="w-40 min-w-[160px]"
+                className="w-full sm:w-40 sm:min-w-[160px]"
                 isLoading={submitting}
               >
                 {editingBlog ? 'Update Blog' : 'Add Blog Post'}
@@ -362,7 +362,7 @@ export const AdminBlogsManager: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleTogglePublish(blog)}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50"

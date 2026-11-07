@@ -216,7 +216,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
         <Button
           size="md"
           variant={showCreateForm ? 'outline' : 'primary'}
-          className="w-48"
+          className="w-full sm:w-48"
           onClick={() => setShowCreateForm((v) => !v)}
         >
           {showCreateForm ? (
@@ -507,12 +507,12 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
               size="md"
-              className="w-36"
+              className="w-full sm:w-36"
               onClick={() => setShowCreateForm(false)}
             >
               Close
@@ -521,7 +521,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
               type="submit"
               variant="primary"
               size="md"
-              className="w-36"
+              className="w-full sm:w-36"
               isLoading={submitting}
             >
               Publish Offer

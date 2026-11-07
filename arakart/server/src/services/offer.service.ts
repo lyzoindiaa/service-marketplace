@@ -35,7 +35,9 @@ export const computeOfferTimeStatus = (offer: any): 'live_now' | 'upcoming' | 'e
   if (todayStr < startD) return 'upcoming';
   if (todayStr > endD) return 'expired';
   if (currentHm < workStart) return 'upcoming';
-  if (currentHm > workEnd) return 'expired';
+  if (currentHm > workEnd) {
+    return todayStr < endD ? 'upcoming' : 'expired';
+  }
   return 'live_now';
 };
 

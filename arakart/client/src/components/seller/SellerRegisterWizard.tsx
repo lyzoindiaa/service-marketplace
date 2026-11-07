@@ -486,7 +486,7 @@ export const SellerRegisterWizard: React.FC = () => {
                 </button>
               ) : (
                 <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-3 mt-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
                       <span>✨ Propose a New Category</span>
                     </span>
@@ -646,7 +646,7 @@ export const SellerRegisterWizard: React.FC = () => {
       {/* STEP 3: CATALOGUE */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-slate-900">Services & Rates</h3>
               <p className="text-xs text-slate-500">
@@ -665,7 +665,7 @@ export const SellerRegisterWizard: React.FC = () => {
 
           <div className="space-y-3 pt-2">
             {services.map((srv, idx) => (
-              <div key={idx} className="flex items-center gap-2">
+              <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   id={`service-name-${idx}`}
                   type="text"
@@ -683,7 +683,7 @@ export const SellerRegisterWizard: React.FC = () => {
                       : 'border-slate-200 bg-slate-50'
                   }`}
                 />
-                <div className="relative w-32">
+                <div className="relative w-full sm:w-32">
                   <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
                   <input
                     id={`service-price-${idx}`}
