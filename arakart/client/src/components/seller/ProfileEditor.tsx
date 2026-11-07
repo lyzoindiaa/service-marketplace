@@ -125,7 +125,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
         nameEn: nameEn.trim(),
         area: area.trim(),
         categories,
-        whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : '',
+        whatsapp: whatsapp.trim() ? whatsapp.replace(/\D/g, '') : undefined,
         bioEn: bioEn.trim(),
         experience,
         workingHours,
@@ -290,7 +290,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
 
       {/* Shop & Work Photos (INT-005) */}
       <div className="pt-4 border-t border-slate-100">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Work & Shop Photos ({photos.length}/6)
@@ -337,7 +337,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDeletePhoto(url)}
-                  className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   title="Delete photo"
                 >
                   ✕

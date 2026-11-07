@@ -88,7 +88,7 @@ export const ReviewsManager: React.FC<ReviewsManagerProps> = ({
                 <p className="text-slate-700">{rev.sellerReply}</p>
               </div>
             ) : (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
                   value={replyTextMap[rev.id] || ''}

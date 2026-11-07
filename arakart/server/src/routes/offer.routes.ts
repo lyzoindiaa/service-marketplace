@@ -9,12 +9,12 @@ import {
   getMyAppliedOffers,
   getAdminOffers,
 } from '../controllers/offer.controller';
-import { verifyToken, requireRole } from '../middleware/auth.middleware';
+import { verifyToken, optionalAuth, requireRole } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Public offers discovery
-router.get('/', getPublicOffers);
+// Public offers discovery (optionalAuth populates hasCustomerApplied for logged-in customers)
+router.get('/', optionalAuth, getPublicOffers);
 
 // Customer applied offers
 router.get('/my-applied', verifyToken, getMyAppliedOffers);

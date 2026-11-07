@@ -67,9 +67,12 @@ export class LeadService {
     const incField = type === 'call' ? { callClicks: 1 } : { whatsappClicks: 1 };
     await Provider.findByIdAndUpdate(provider._id, { $inc: incField });
 
-    // Emit real-time notification to the seller's room
+    // Emit real-time notification to the seller's room (both provider._id and owner userId rooms)
     const leadJson = lead.toJSON ? lead.toJSON() : lead.toObject();
-    emitToSeller(provider.owner.toString(), 'newLead', leadJson);
+    emitToSeller(provider._id.toString(), 'newLead', leadJson);
+    if (provider.owner.toString() !== provider._id.toString()) {
+      emitToSeller(provider.owner.toString(), 'newLead', leadJson);
+    }
 
     return {
       lead: leadJson,
