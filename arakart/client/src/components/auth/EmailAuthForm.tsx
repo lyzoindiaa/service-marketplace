@@ -56,7 +56,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
-      setError('Please fill in both email and password');
+      setError(null);
       const firstId = errs.email ? 'auth-login-email' : 'auth-login-password';
       focusFirstInvalidField([firstId]);
       return;
@@ -78,7 +78,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
         setMode('verify-email');
         addToast('Please verify your email to continue', 'info');
       } else {
-        setError(msg);
+        setError(null);
         setFieldErrors({ email: msg, password: ' ' });
         focusFirstInvalidField(['auth-login-email']);
       }
@@ -115,7 +115,7 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
-      setError('Please fill in all required fields (Name, Email, and Password)');
+      setError(null);
       const order = ['auth-reg-name', 'auth-reg-email', 'auth-reg-phone', 'auth-reg-password'];
       const firstId = order.find((id) => errs[id.replace('auth-reg-', '')]);
       focusFirstInvalidField([firstId]);
@@ -140,8 +140,9 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
       setMode('verify-email');
       addToast('Verification code sent to your email', 'info');
     } catch (err: any) {
-      setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed');
-      setFieldErrors({ email: err.response?.data?.error });
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed';
+      setError(null);
+      setFieldErrors({ email: errMsg });
       focusFirstInvalidField(['auth-reg-email']);
     } finally {
       setLoading(false);
@@ -476,8 +477,6 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           error={fieldErrors.password}
         />
 
-        {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
-
         <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
           Create Account
         </Button>
@@ -502,21 +501,23 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
   // --- View: Login (Sign In) ---
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-      <Input
-        id="auth-login-email"
-        label="Email Address"
-        name="email"
-        type="email"
-        placeholder="your.email@example.com"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          if (error) setError(null);
-          if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
-        }}
-        error={fieldErrors.email}
-        autoFocus
-      />
+        <Input
+          id="auth-login-email"
+          label="Email Address"
+          name="email"
+          type="email"
+          placeholder="your.email@example.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (error) setError(null);
+            if (fieldErrors.email || fieldErrors.password === 'Invalid email or password.') {
+              setFieldErrors((prev) => ({ ...prev, email: undefined }));
+            }
+          }}
+          error={fieldErrors.email}
+          autoFocus
+        />
 
       <div>
         <Input
@@ -529,7 +530,13 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           onChange={(e) => {
             setPassword(e.target.value);
             if (error) setError(null);
-            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+            if (fieldErrors.password) {
+              setFieldErrors((prev) => ({
+                ...prev,
+                password: undefined,
+                email: prev.email === ' ' ? undefined : prev.email,
+              }));
+            }
           }}
           error={fieldErrors.password}
         />
@@ -546,8 +553,6 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({ onSuccess }) => {
           </button>
         </div>
       </div>
-
-      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
       <Button type="submit" variant="primary" size="md" className="w-full" loading={loading}>
         Sign In

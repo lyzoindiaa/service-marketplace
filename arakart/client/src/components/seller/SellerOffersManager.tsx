@@ -26,12 +26,18 @@ import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 interface SellerOffersManagerProps {
   services: ProviderServiceItem[];
+  initialOffers?: OfferItem[];
+  onOffersUpdated?: (offers: OfferItem[]) => void;
 }
 
-export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ services }) => {
+export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({
+  services,
+  initialOffers,
+  onOffersUpdated,
+}) => {
   const { addToast } = useUiStore();
-  const [offers, setOffers] = useState<OfferItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState<OfferItem[]>(initialOffers ?? []);
+  const [loading, setLoading] = useState(initialOffers === undefined);
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -66,6 +72,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
       }
       const list = await fetchSellerOffers();
       setOffers(list);
+      onOffersUpdated?.(list);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load seller offers', 'error');
     } finally {
@@ -73,11 +80,18 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
         setLoading(false);
       }
     }
-  }, [addToast]);
+  }, [addToast, onOffersUpdated]);
 
   useEffect(() => {
-    loadSellerOffers();
-  }, [loadSellerOffers]);
+    if (initialOffers !== undefined) {
+      setOffers(initialOffers);
+    }
+  }, [initialOffers]);
+
+  useEffect(() => {
+    loadSellerOffers(initialOffers !== undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pre-populate originalPrice when selecting a service from catalogue
   useEffect(() => {
@@ -237,6 +251,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
       {showCreateForm && (
         <form
           onSubmit={handleCreateOffer}
+          noValidate
           className="bg-white p-6 rounded-2xl border border-brand-primary/30 shadow-sm space-y-5"
         >
           <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">

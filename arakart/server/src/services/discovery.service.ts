@@ -66,6 +66,22 @@ export class DiscoveryService {
     return city.save();
   }
 
+  private addUniqueAreaCaseInsensitive(areaMap: Map<string, string>, rawArea?: string): void {
+    if (!rawArea || !rawArea.trim()) return;
+    const trimmed = rawArea.trim();
+    const key = trimmed.toLowerCase();
+    const formatted = trimmed
+      .split(/\s+/)
+      .map((w) => (w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+      .join(' ');
+    const existing = areaMap.get(key);
+    if (!existing) {
+      areaMap.set(key, formatted);
+    } else if (existing === existing.toLowerCase() && formatted !== formatted.toLowerCase()) {
+      areaMap.set(key, formatted);
+    }
+  }
+
   // Dynamic Seller Localities Aggregation per City
   async getCityAreas(slug: string): Promise<{
     city: string;
@@ -84,13 +100,11 @@ export class DiscoveryService {
         .select('area areasServed')
         .lean();
 
-      const areaSet = new Set<string>();
+      const areaMap = new Map<string, string>();
       providers.forEach((p) => {
-        if (p.area && p.area.trim()) areaSet.add(p.area.trim());
+        this.addUniqueAreaCaseInsensitive(areaMap, p.area);
         if (Array.isArray(p.areasServed)) {
-          p.areasServed.forEach((a) => {
-            if (a && a.trim()) areaSet.add(a.trim());
-          });
+          p.areasServed.forEach((a) => this.addUniqueAreaCaseInsensitive(areaMap, a));
         }
       });
 
@@ -100,7 +114,7 @@ export class DiscoveryService {
         state: 'India',
         stateHi: 'भारत',
         slug: 'all',
-        areas: Array.from(areaSet).sort((a, b) => a.localeCompare(b)),
+        areas: Array.from(areaMap.values()).sort((a, b) => a.localeCompare(b)),
       };
     }
 
@@ -118,28 +132,24 @@ export class DiscoveryService {
       .select('area areasServed')
       .lean();
 
-    const areaSet = new Set<string>();
+    const areaMap = new Map<string, string>();
 
     if (Array.isArray(city.defaultAreas)) {
       city.defaultAreas.forEach((a) => {
-        if (a && a.trim()) areaSet.add(a.trim());
+        this.addUniqueAreaCaseInsensitive(areaMap, a);
       });
     }
 
     providers.forEach((p) => {
-      if (p.area && p.area.trim()) {
-        areaSet.add(p.area.trim());
-      }
+      this.addUniqueAreaCaseInsensitive(areaMap, p.area);
       if (Array.isArray(p.areasServed)) {
         p.areasServed.forEach((a) => {
-          if (a && a.trim()) {
-            areaSet.add(a.trim());
-          }
+          this.addUniqueAreaCaseInsensitive(areaMap, a);
         });
       }
     });
 
-    const areas = Array.from(areaSet).sort((a, b) => a.localeCompare(b));
+    const areas = Array.from(areaMap.values()).sort((a, b) => a.localeCompare(b));
 
     return {
       city: city.nameEn,

@@ -57,12 +57,12 @@ export const Button: React.FC<ButtonProps> = ({
       {isBusy ? (
         <>
           <Spinner size={size === 'lg' ? 'md' : 'sm'} color="currentColor" />
-          <span>{children}</span>
+          <span className="inline-flex items-center gap-1.5">{children}</span>
         </>
       ) : (
         <>
-          {icon && <span className="shrink-0">{icon}</span>}
-          <span>{children}</span>
+          {icon && <span className="shrink-0 inline-flex items-center">{icon}</span>}
+          <span className="inline-flex items-center gap-1.5">{children}</span>
         </>
       )}
     </button>

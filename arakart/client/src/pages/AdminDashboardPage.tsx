@@ -146,11 +146,11 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="flex overflow-x-auto no-scrollbar gap-2 py-4 mt-6 border-b border-border-light">
+      {/* Tabs Navigation — Single Line, Zero Visible Scrollbar */}
+      <div className="flex items-center justify-between overflow-x-auto no-scrollbar gap-1.5 py-3 mt-6 border-b border-border-light">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'overview'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -161,7 +161,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap relative ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 relative ${
             activeTab === 'pending'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -169,7 +169,7 @@ export const AdminDashboardPage: React.FC = () => {
         >
           ⏳ Pending Approvals
           {pendingSellers.length > 0 && (
-            <span className="ml-1.5 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+            <span className="ml-1.5 bg-amber-500 text-white text-[11px] px-1.5 py-0.5 rounded-full font-bold">
               {pendingSellers.length}
             </span>
           )}
@@ -177,7 +177,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'users'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -188,7 +188,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('categories')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'categories'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -199,7 +199,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('cities')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'cities'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -210,7 +210,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('offers')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'offers'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -221,7 +221,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('blogs')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
             activeTab === 'blogs'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -232,7 +232,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('reports')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap relative ${
+          className={`px-3 py-2 text-xs lg:text-[13px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 relative ${
             activeTab === 'reports'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
@@ -240,7 +240,7 @@ export const AdminDashboardPage: React.FC = () => {
         >
           🛡️ Abuse Reports
           {reports.filter((r) => r.status === 'open').length > 0 && (
-            <span className="ml-1.5 bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+            <span className="ml-1.5 bg-rose-500 text-white text-[11px] px-1.5 py-0.5 rounded-full font-bold">
               {reports.filter((r) => r.status === 'open').length}
             </span>
           )}

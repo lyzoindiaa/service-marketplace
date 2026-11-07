@@ -11,12 +11,14 @@ import { createLead } from '../../services/leadService';
 export interface ProviderCardProps {
   provider: ProviderProfile;
   isFavourite?: boolean;
+  showRemoveLabel?: boolean;
   onToggleFavourite?: (providerId: string) => void;
 }
 
 export const ProviderCard: React.FC<ProviderCardProps> = ({
   provider,
   isFavourite = false,
+  showRemoveLabel = false,
   onToggleFavourite,
 }) => {
   const { isAuthenticated } = useAuthStore();
@@ -25,6 +27,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
   const [unmaskedPhone, setUnmaskedPhone] = useState<string | null>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [isMessaging, setIsMessaging] = useState(false);
+
+  const resolvedProviderId = provider.id || (provider as any)._id;
 
   // Fallback initial letter & brand gradient avatar
   const displayName = language === 'hi' && provider.nameHi ? provider.nameHi : provider.nameEn;
@@ -52,7 +56,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
     setIsCalling(true);
     try {
       const res = await createLead({
-        providerId: provider.id,
+        providerId: resolvedProviderId,
         type: 'call',
       });
       const revealedPhone = res.unmaskedPhone || (res as any).phone;
@@ -82,14 +86,15 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
     setIsMessaging(true);
     try {
       const res = await createLead({
-        providerId: provider.id,
+        providerId: resolvedProviderId,
         type: 'whatsapp',
       });
 
       const phoneForWa = (res.whatsapp || res.unmaskedPhone).replace(/\D/g, '');
-      const cleanPhone = phoneForWa.startsWith('91') && phoneForWa.length === 12 
-        ? phoneForWa 
-        : `91${phoneForWa.replace(/^0+/, '')}`;
+      const cleanPhone =
+        phoneForWa.startsWith('91') && phoneForWa.length === 12
+          ? phoneForWa
+          : `91${phoneForWa.replace(/^0+/, '')}`;
 
       const prefilledText = encodeURIComponent(
         `Hi ${provider.nameEn}, I found your profile on AraKart and would like to inquire about your services in ${provider.area}.`
@@ -113,8 +118,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
       return;
     }
 
-    if (onToggleFavourite) {
-      onToggleFavourite(provider.id);
+    if (onToggleFavourite && resolvedProviderId) {
+      onToggleFavourite(resolvedProviderId);
     }
   };
 
@@ -123,7 +128,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
       {/* Top section: Avatar, Info & Heart */}
       <div>
         <div className="flex items-start justify-between gap-3">
-          <Link to={`/provider/${provider.id}`} className="flex items-start gap-3.5 flex-1 min-w-0">
+          <Link to={`/provider/${resolvedProviderId}`} className="flex items-start gap-3.5 flex-1 min-w-0">
             {/* Avatar / Photo */}
             <div className="relative shrink-0">
               {provider.photos && provider.photos.length > 0 ? (
@@ -163,7 +168,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                 <span className="text-xs text-slate-400">
                   ({provider.reviewCount || 0})
                 </span>
-                {provider.experience && provider.experience > 0 && (
+                {(provider.experience ?? 0) > 0 && (
                   <>
                     <span className="text-slate-300">•</span>
                     <span className="text-xs text-slate-600 font-medium">
@@ -203,20 +208,22 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
             </div>
           </Link>
 
-          {/* Favourite Heart Button */}
+          {/* Favourite Heart / Remove Button */}
           <button
             type="button"
             aria-label="favourite"
             title={isFavourite ? 'Remove from favourites' : 'Save to favourites'}
             onClick={handleFavouriteClick}
-            className={`p-2 rounded-full transition-colors shrink-0 ${
-              isFavourite
-                ? 'text-rose-500 bg-rose-50 hover:bg-rose-100'
-                : 'text-slate-400 hover:text-rose-500 hover:bg-slate-50'
+            className={`transition-colors shrink-0 ${
+              showRemoveLabel && isFavourite
+                ? 'flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/80'
+                : isFavourite
+                  ? 'p-2 rounded-full text-rose-500 bg-rose-50 hover:bg-rose-100'
+                  : 'p-2 rounded-full text-slate-400 hover:text-rose-500 hover:bg-slate-50'
             }`}
           >
             <svg
-              className="w-5 h-5"
+              className={showRemoveLabel && isFavourite ? 'w-3.5 h-3.5' : 'w-5 h-5'}
               fill={isFavourite ? 'currentColor' : 'none'}
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -228,6 +235,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                 d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
               />
             </svg>
+            {showRemoveLabel && isFavourite && <span>Remove</span>}
           </button>
         </div>
 

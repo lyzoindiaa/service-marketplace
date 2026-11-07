@@ -10,7 +10,7 @@ import { useAuthStore } from '../store/authStore';
 
 export const CustomerFavouritesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, setFavourites: setStoreFavourites } = useAuthStore();
   const { addToast } = useUiStore();
 
   const [favourites, setFavourites] = useState<ProviderProfile[]>([]);
@@ -20,13 +20,15 @@ export const CustomerFavouritesPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await getFavourites();
-      setFavourites(data || []);
+      const list = data || [];
+      setFavourites(list);
+      setStoreFavourites(list.map((p: any) => String(p.id || p._id)));
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load saved providers', 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, setStoreFavourites]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,11 +39,20 @@ export const CustomerFavouritesPage: React.FC = () => {
   }, [isAuthenticated, navigate, loadFavourites]);
 
   const handleToggleFavourite = async (providerId: string) => {
+    const previous = favourites;
+    const updated = favourites.filter((p: any) => String(p.id || p._id) !== String(providerId));
+    setFavourites(updated);
+    setStoreFavourites(updated.map((p: any) => String(p.id || p._id)));
+
     try {
-      await removeFavourite(providerId);
-      setFavourites((prev) => prev.filter((p) => p.id !== providerId));
+      const res = await removeFavourite(providerId);
+      if (res?.favourites) {
+        setStoreFavourites(res.favourites);
+      }
       addToast('Removed from favourites', 'info');
     } catch (err: any) {
+      setFavourites(previous);
+      setStoreFavourites(previous.map((p: any) => String(p.id || p._id)));
       addToast(err.response?.data?.message || 'Failed to update favourite', 'error');
     }
   };
@@ -87,9 +98,10 @@ export const CustomerFavouritesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {favourites.map((provider) => (
             <ProviderCard
-              key={provider.id}
+              key={provider.id || (provider as any)._id}
               provider={provider}
               isFavourite={true}
+              showRemoveLabel={true}
               onToggleFavourite={handleToggleFavourite}
             />
           ))}

@@ -222,7 +222,10 @@ export class AuthService {
       throw new Error('This account was created with Google or Phone. Please use the appropriate login method.');
     }
 
-    const isMatch = await comparePassword(password, user.passwordHash);
+    let isMatch = await comparePassword(password, user.passwordHash);
+    if (!isMatch && password.trim() !== password) {
+      isMatch = await comparePassword(password.trim(), user.passwordHash);
+    }
     if (!isMatch) {
       throw new Error('Invalid email or password.');
     }

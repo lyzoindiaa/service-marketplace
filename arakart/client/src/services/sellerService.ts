@@ -14,6 +14,8 @@ export interface ApplySellerPayload {
   categories: string[];
   requestedCategory?: RequestedCategoryPayload;
   city?: string;
+  cityName?: string;
+  state?: string;
   area: string;
   areasServed?: string[];
   phone: string;

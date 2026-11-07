@@ -131,11 +131,11 @@ export const BlogsPage: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight mb-6">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight mb-6 break-all">
               {title}
             </h1>
 
-            <div className="prose max-w-none text-slate-700 leading-relaxed space-y-4 whitespace-pre-line text-sm sm:text-base">
+            <div className="prose max-w-none text-slate-700 leading-relaxed space-y-4 whitespace-pre-line text-sm sm:text-base break-all">
               {content}
             </div>
           </div>
@@ -255,11 +255,11 @@ export const BlogsPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-2 mb-2">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-2 mb-2 break-all">
                       {title}
                     </h3>
 
-                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed break-all">
                       {excerpt}
                     </p>
                   </div>

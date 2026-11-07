@@ -11,16 +11,20 @@ import {
   Search,
   Star,
   MessageSquareQuote,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { SearchBar } from '../components/search/SearchBar';
 import { CategoryGrid } from '../components/search/CategoryGrid';
 import { fetchCityAreas } from '../services/discoveryService';
 import { fetchPublicStats, PublicStatsResponse } from '../services/providerService';
 import { useUiStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const {
     selectedCity,
     selectedCityName,
@@ -28,6 +32,8 @@ export const HomePage: React.FC = () => {
     language,
   } = useUiStore();
   const [areas, setAreas] = useState<string[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [publicStats, setPublicStats] = useState<PublicStatsResponse>({
     verifiedProvidersCount: 0,
     categoriesCount: 0,
@@ -54,6 +60,7 @@ export const HomePage: React.FC = () => {
       .then((stats) => {
         if (isMounted && stats) {
           setPublicStats(stats);
+          setReviewIndex(0);
         }
       })
       .catch(() => {});
@@ -62,6 +69,34 @@ export const HomePage: React.FC = () => {
       isMounted = false;
     };
   }, [selectedCity]);
+
+  const totalRecentReviews = publicStats.recentReviews.length;
+
+  // Automatically slide the reviews carousel when multiple reviews exist
+  useEffect(() => {
+    if (totalRecentReviews <= 1 || isCarouselPaused) return;
+
+    const timer = setInterval(() => {
+      setReviewIndex((prev) => (prev + 1) % totalRecentReviews);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [totalRecentReviews, isCarouselPaused]);
+
+  const handlePrevReview = () => {
+    if (totalRecentReviews <= 1) return;
+    setReviewIndex((prev) => (prev - 1 + totalRecentReviews) % totalRecentReviews);
+  };
+
+  const handleNextReview = () => {
+    if (totalRecentReviews <= 1) return;
+    setReviewIndex((prev) => (prev + 1) % totalRecentReviews);
+  };
+
+  const carouselItems =
+    totalRecentReviews > 3
+      ? [...publicStats.recentReviews, ...publicStats.recentReviews.slice(0, 3)]
+      : publicStats.recentReviews;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -180,57 +215,156 @@ export const HomePage: React.FC = () => {
         <CategoryGrid />
       </section>
 
-      {/* 3b. Dynamic Recent Customer Reviews Section */}
-      {publicStats.recentReviews.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 pb-12">
-          <div className="text-center sm:text-left mb-8">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold mb-2">
-              <MessageSquareQuote className="w-3.5 h-3.5" />
-              <span>{language === 'hi' ? 'ग्राहकों की राय' : 'Verified Customer Reviews'}</span>
+      {/* 3b. Dynamic Auto-Moving Customer Reviews Carousel Section */}
+      {totalRecentReviews > 0 && (
+        <section
+          className="max-w-6xl mx-auto px-4 pb-14"
+          onMouseEnter={() => setIsCarouselPaused(true)}
+          onMouseLeave={() => setIsCarouselPaused(false)}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 text-center sm:text-left">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold mb-2">
+                <MessageSquareQuote className="w-3.5 h-3.5" />
+                <span>{language === 'hi' ? 'ग्राहकों की राय' : 'Verified Customer Reviews'}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                {language === 'hi' ? 'ग्राहक क्या कह रहे हैं' : 'What Customers Are Saying'}
+              </h2>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              {language === 'hi' ? 'ग्राहक क्या कह रहे हैं' : 'What Customers Are Saying'}
-            </h2>
+
+            {totalRecentReviews > 1 && (
+              <div className="flex items-center justify-center sm:justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrevReview}
+                  aria-label="Previous review"
+                  className="w-9 h-9 rounded-full bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-xs transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextReview}
+                  aria-label="Next review"
+                  className="w-9 h-9 rounded-full bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-xs transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {publicStats.recentReviews.slice(0, 3).map((rev) => (
+          {totalRecentReviews <= 3 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {publicStats.recentReviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  onClick={() => rev.providerId && navigate(`/providers/${rev.providerId}`)}
+                  className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-bold text-sm text-slate-900">{rev.customerName}</span>
+                      <div className="flex items-center gap-0.5 text-amber-500">
+                        {[...Array(5)].map((_, idx) => (
+                          <Star
+                            key={idx}
+                            className={`w-3.5 h-3.5 ${
+                              idx < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span className="font-semibold text-indigo-600 truncate">
+                      {language === 'hi'
+                        ? rev.providerNameHi || rev.providerNameEn
+                        : rev.providerNameEn}
+                    </span>
+                    {rev.providerArea && (
+                      <span className="text-slate-400 shrink-0 ml-2">{rev.providerArea}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative overflow-hidden -mx-3 px-3 py-1">
               <div
-                key={rev.id}
-                onClick={() => rev.providerId && navigate(`/providers/${rev.providerId}`)}
-                className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                className="flex transition-transform duration-700 ease-in-out [--slide-step:100%] md:[--slide-step:33.333333%]"
+                style={{
+                  transform: `translateX(calc(-${reviewIndex} * var(--slide-step)))`,
+                }}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-bold text-sm text-slate-900">{rev.customerName}</span>
-                    <div className="flex items-center gap-0.5 text-amber-500">
-                      {[...Array(5)].map((_, idx) => (
-                        <Star
-                          key={idx}
-                          className={`w-3.5 h-3.5 ${
-                            idx < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
-                          }`}
-                        />
-                      ))}
+                {carouselItems.map((rev, itemIdx) => (
+                  <div
+                    key={`${rev.id}-${itemIdx}`}
+                    className="w-full md:w-1/3 shrink-0 px-3"
+                  >
+                    <div
+                      onClick={() => rev.providerId && navigate(`/providers/${rev.providerId}`)}
+                      className="h-full bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-bold text-sm text-slate-900">{rev.customerName}</span>
+                          <div className="flex items-center gap-0.5 text-amber-500">
+                            {[...Array(5)].map((_, idx) => (
+                              <Star
+                                key={idx}
+                                className={`w-3.5 h-3.5 ${
+                                  idx < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
+                          "{rev.comment}"
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span className="font-semibold text-indigo-600 truncate">
+                          {language === 'hi'
+                            ? rev.providerNameHi || rev.providerNameEn
+                            : rev.providerNameEn}
+                        </span>
+                        {rev.providerArea && (
+                          <span className="text-slate-400 shrink-0 ml-2">{rev.providerArea}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3">
-                    "{rev.comment}"
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-semibold text-indigo-600 truncate">
-                    {language === 'hi'
-                      ? rev.providerNameHi || rev.providerNameEn
-                      : rev.providerNameEn}
-                  </span>
-                  {rev.providerArea && (
-                    <span className="text-slate-400 shrink-0 ml-2">{rev.providerArea}</span>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Carousel Pagination Dots */}
+              <div className="flex items-center justify-center gap-1.5 mt-6">
+                {publicStats.recentReviews.map((rev, idx) => {
+                  const isActive = idx === reviewIndex;
+                  return (
+                    <button
+                      key={rev.id}
+                      type="button"
+                      onClick={() => setReviewIndex(idx)}
+                      aria-label={`Go to review ${idx + 1}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        isActive
+                          ? 'w-6 bg-indigo-600'
+                          : 'w-2 bg-slate-300 hover:bg-slate-400'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -282,34 +416,36 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. Provider / Seller CTA Banner */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold mb-4">
-              <CheckCircle2 className="w-3.5 h-3.5" /> For Service Professionals & Technicians
+      {/* 5. Provider / Seller CTA Banner (shown only to guests) */}
+      {!user && (
+        <section className="max-w-6xl mx-auto px-4 py-16">
+          <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold mb-4">
+                <CheckCircle2 className="w-3.5 h-3.5" /> For Service Professionals & Technicians
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Grow Your Business with AraKart
+              </h2>
+              <p className="text-slate-300 text-sm mt-3 leading-relaxed">
+                Join top-rated electricians, plumbers, and home experts receiving direct
+                customer calls every day.
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Grow Your Business with AraKart
-            </h2>
-            <p className="text-slate-300 text-sm mt-3 leading-relaxed">
-              Join top-rated electricians, plumbers, and home experts receiving direct
-              customer calls every day.
-            </p>
-          </div>
 
-          <div className="shrink-0 w-full md:w-auto">
-            <button
-              type="button"
-              onClick={() => navigate('/register-seller')}
-              className="w-full md:w-auto px-8 py-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold rounded-2xl shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2"
-            >
-              <span>Register as a Service Professional</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="shrink-0 w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => navigate('/register-seller')}
+                className="w-full md:w-auto px-8 py-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold rounded-2xl shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2"
+              >
+                <span>Register as a Service Professional</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };

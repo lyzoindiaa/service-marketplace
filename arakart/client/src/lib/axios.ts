@@ -109,8 +109,14 @@ api.interceptors.response.use(
           { withCredentials: true }
         );
 
-        const newAccessToken = refreshResponse.data.accessToken;
-        const refreshedUser = refreshResponse.data.user;
+        const newAccessToken =
+          refreshResponse.data?.data?.accessToken || refreshResponse.data?.accessToken;
+        const refreshedUser =
+          refreshResponse.data?.data?.user || refreshResponse.data?.user;
+
+        if (!newAccessToken) {
+          throw new Error('Failed to refresh access token');
+        }
 
         if (refreshedUser) {
           useAuthStore.getState().setAuth(refreshedUser, newAccessToken);

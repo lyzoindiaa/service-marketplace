@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean;
   setAuth: (user: User, accessToken: string) => void;
   setToken: (accessToken: string) => void;
+  setFavourites: (favourites: string[]) => void;
   clearAuth: () => void;
   initAuth: () => Promise<void>;
   logout: () => Promise<void>;
@@ -21,6 +22,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   setAuth: (user, accessToken) => set({ user, accessToken, isAuthenticated: true }),
   setToken: (accessToken) => set({ accessToken, isAuthenticated: true }),
+  setFavourites: (favourites) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, favourites } : null,
+    })),
   clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false }),
   initAuth: async () => {
     set({ isLoading: true });

@@ -15,7 +15,7 @@ import { useUiStore } from '../store/uiStore';
 export const SearchResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setFavourites: setStoreFavourites } = useAuthStore();
   const { language, selectedCity, addToast } = useUiStore();
 
   // URL state
@@ -96,7 +96,7 @@ export const SearchResultsPage: React.FC = () => {
         verifiedOnly: verifiedOnly ? true : undefined,
         sort: sort as any,
         page,
-        limit: 10,
+        limit: 6,
         city: selectedCity,
       });
 
@@ -179,23 +179,29 @@ export const SearchResultsPage: React.FC = () => {
     if (isFav) {
       updated.delete(providerId);
       setFavouriteIds(new Set(updated));
+      setStoreFavourites(Array.from(updated));
       try {
-        await removeFavourite(providerId);
+        const res = await removeFavourite(providerId);
+        if (res?.favourites) setStoreFavourites(res.favourites);
         addToast(language === 'hi' ? 'पसंदीदा सूची से हटाया गया' : 'Removed from favourites', 'info');
       } catch (err: any) {
         updated.add(providerId);
         setFavouriteIds(new Set(updated));
+        setStoreFavourites(Array.from(updated));
         addToast('Failed to update favourite', 'error');
       }
     } else {
       updated.add(providerId);
       setFavouriteIds(new Set(updated));
+      setStoreFavourites(Array.from(updated));
       try {
-        await addFavourite(providerId);
+        const res = await addFavourite(providerId);
+        if (res?.favourites) setStoreFavourites(res.favourites);
         addToast(language === 'hi' ? 'पसंदीदा सूची में जोड़ा गया' : 'Added to favourites', 'success');
       } catch (err: any) {
         updated.delete(providerId);
         setFavouriteIds(new Set(updated));
+        setStoreFavourites(Array.from(updated));
         addToast('Failed to update favourite', 'error');
       }
     }

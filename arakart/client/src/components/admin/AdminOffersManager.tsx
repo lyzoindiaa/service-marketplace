@@ -143,7 +143,7 @@ export const AdminOffersManager: React.FC = () => {
 
                 <button
                   onClick={() => handleDeleteOffer(offer.id)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-600 hover:bg-rose-50 self-start sm:self-center"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-600 hover:bg-rose-50 self-start sm:self-center shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove Offer
                 </button>

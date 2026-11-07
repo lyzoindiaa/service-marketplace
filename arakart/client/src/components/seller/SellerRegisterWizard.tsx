@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { applySeller, ApplySellerPayload } from '../../services/sellerService';
-import { fetchCategories, fetchCityAreas, CategoryItem } from '../../services/discoveryService';
+import * as discoveryService from '../../services/discoveryService';
+import { CategoryItem, CityItem } from '../../services/discoveryService';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Badge } from '../common/Badge';
@@ -9,13 +10,26 @@ import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
+const DEFAULT_CITIES: CityItem[] = [
+  { id: 'c1', slug: 'ara', nameEn: 'Ara', nameHi: 'आरा', stateEn: 'Bihar', stateHi: 'बिहार', isLive: true },
+  { id: 'c2', slug: 'patna', nameEn: 'Patna', nameHi: 'पटना', stateEn: 'Bihar', stateHi: 'बिहार', isLive: true },
+  { id: 'c3', slug: 'buxar', nameEn: 'Buxar', nameHi: 'बक्सर', stateEn: 'Bihar', stateHi: 'बिहार', isLive: true },
+];
+
 export const SellerRegisterWizard: React.FC = () => {
   const { user, accessToken, setAuth } = useAuthStore();
   const { selectedCity, addToast, language } = useUiStore();
 
   const [step, setStep] = useState<number>(1);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [availableAreas, setAvailableAreas] = useState<string[]>([]);
+  const [cities, setCities] = useState<CityItem[]>(DEFAULT_CITIES);
+  const [availableAreas, setAvailableAreas] = useState<string[]>([
+    'Nawada',
+    'Anaith',
+    'Zero Mile',
+    'Gopali Chowk',
+    'Judge Bazar',
+  ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,8 +46,18 @@ export const SellerRegisterWizard: React.FC = () => {
   const [requestedCatNameEn, setRequestedCatNameEn] = useState('');
   const [requestedCatNameHi, setRequestedCatNameHi] = useState('');
   const [requestedCatDesc, setRequestedCatDesc] = useState('');
+
+  // Location State (Existing City/Locality OR Custom New State/City/Locality)
+  const initialCitySlug = selectedCity && selectedCity !== 'all' ? selectedCity : 'ara';
+  const [formCitySlug, setFormCitySlug] = useState<string>(initialCitySlug);
   const [area, setArea] = useState('Nawada');
   const [areasServed, setAreasServed] = useState<string[]>(['Nawada']);
+  const [isCustomLocation, setIsCustomLocation] = useState(false);
+  const [customState, setCustomState] = useState('');
+  const [customCity, setCustomCity] = useState('');
+  const [customArea, setCustomArea] = useState('');
+  const [isCustomAreaOnly, setIsCustomAreaOnly] = useState(false);
+
   const [experience, setExperience] = useState<number>(3);
   const [bioEn, setBioEn] = useState('');
   const [workingHours, setWorkingHours] = useState('8:00 AM - 8:00 PM');
@@ -53,24 +77,47 @@ export const SellerRegisterWizard: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitial = async () => {
       try {
-        const [cats, cityAreas] = await Promise.all([
-          fetchCategories(),
-          fetchCityAreas(selectedCity),
-        ]);
-        setCategories(cats);
-        setAvailableAreas(
-          cityAreas.areas?.length
-            ? cityAreas.areas
-            : ['Nawada', 'Anaith', 'Zero Mile', 'Gopali Chowk', 'Judge Bazar']
-        );
+        const cats = await discoveryService.fetchCategories();
+        if (Array.isArray(cats)) setCategories(cats);
       } catch (err) {
-        console.error('Failed to load categories/areas', err);
+        console.error('Failed to load categories', err);
+      }
+      try {
+        if ('fetchCities' in discoveryService && typeof discoveryService.fetchCities === 'function') {
+          const fetchedCities = await discoveryService.fetchCities();
+          if (Array.isArray(fetchedCities) && fetchedCities.length > 0) {
+            setCities(fetchedCities);
+          }
+        }
+      } catch {
+        // Keep DEFAULT_CITIES fallback
       }
     };
-    loadData();
-  }, [selectedCity]);
+    loadInitial();
+  }, []);
+
+  useEffect(() => {
+    const loadAreas = async () => {
+      try {
+        if (typeof discoveryService.fetchCityAreas !== 'function') return;
+        const cityAreas = await discoveryService.fetchCityAreas(formCitySlug || 'ara');
+        const list =
+          cityAreas?.areas && cityAreas.areas.length > 0
+            ? cityAreas.areas
+            : ['Nawada', 'Anaith', 'Zero Mile', 'Gopali Chowk', 'Judge Bazar'];
+        setAvailableAreas(list);
+        if (!list.includes(area)) {
+          setArea(list[0]);
+          setAreasServed([list[0]]);
+        }
+      } catch {
+        // Keep current fallback areas
+      }
+    };
+    loadAreas();
+  }, [formCitySlug]);
 
   const toggleCategory = (slug: string) => {
     if (selectedCategories.includes(slug)) {
@@ -98,6 +145,14 @@ export const SellerRegisterWizard: React.FC = () => {
     setServices(updated);
   };
 
+  const resolvedArea = isCustomLocation || isCustomAreaOnly ? customArea.trim() : area;
+  const selectedCityObj = cities.find((c) => c.slug === formCitySlug);
+  const resolvedCityDisplay = isCustomLocation
+    ? `${customCity.trim()}${customState.trim() ? `, ${customState.trim()}` : ''}`
+    : selectedCityObj
+    ? `${selectedCityObj.nameEn}, ${selectedCityObj.stateEn || 'Bihar'}`
+    : formCitySlug;
+
   const handleNext = () => {
     setErrorMessage(null);
     setFieldErrors({});
@@ -107,7 +162,9 @@ export const SellerRegisterWizard: React.FC = () => {
       const cleanPhone = phone.replace(/\D/g, '');
       const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, '') : '';
 
-      if (email.trim() && !/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
+      if (!email.trim()) {
+        errors.email = 'Please enter your email address';
+      } else if (!/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email.trim())) {
         errors.email = 'Please enter a valid email address';
       }
       if (!phone || cleanPhone.length !== 10) {
@@ -119,12 +176,11 @@ export const SellerRegisterWizard: React.FC = () => {
 
       if (Object.keys(errors).length > 0) {
         setFieldErrors(errors);
-        setErrorMessage(Object.values(errors)[0]);
+        const invalidIds: string[] = [];
+        if (errors.email) invalidIds.push('seller-email');
+        if (errors.phone) invalidIds.push('seller-phone');
+        if (errors.whatsapp) invalidIds.push('seller-whatsapp');
         setTimeout(() => {
-          const invalidIds: string[] = [];
-          if (errors.email) invalidIds.push('seller-email');
-          if (errors.phone) invalidIds.push('seller-phone');
-          if (errors.whatsapp) invalidIds.push('seller-whatsapp');
           focusFirstInvalidField(invalidIds);
         }, 0);
         return;
@@ -144,19 +200,67 @@ export const SellerRegisterWizard: React.FC = () => {
       } else if (isRequestingCategory && (!requestedCatNameEn.trim() || requestedCatNameEn.trim().length < 2)) {
         errors.requestedCatNameEn = 'Please enter the trade/category name (at least 2 characters)';
       }
-      if (!area) {
+
+      if (isRequestingCategory && requestedCatNameEn.trim().length >= 2) {
+        const normalizedReqCat = requestedCatNameEn.trim().toLowerCase();
+        const catExists = categories.some(
+          (c) =>
+            c.nameEn.trim().toLowerCase() === normalizedReqCat ||
+            c.slug.trim().toLowerCase() === normalizedReqCat.replace(/[^a-z0-9]+/g, '-')
+        );
+        if (catExists) {
+          errors.requestedCatNameEn = 'This category already exists. Please select it from the list above.';
+        }
+      }
+
+      if (isCustomLocation) {
+        if (!customState.trim() || customState.trim().length < 2) {
+          errors.customState = 'Please enter your state name';
+        }
+        if (!customCity.trim() || customCity.trim().length < 2) {
+          errors.customCity = 'Please enter your city or district name';
+        } else {
+          const normalizedCityInput = customCity.trim().toLowerCase();
+          const citySlugInput = normalizedCityInput.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const cityExists = cities.some(
+            (c) =>
+              c.nameEn.trim().toLowerCase() === normalizedCityInput ||
+              c.slug.trim().toLowerCase() === citySlugInput
+          );
+          if (cityExists) {
+            errors.customCity = 'This city already exists. Please select it from the City & State dropdown.';
+          }
+        }
+        if (!customArea.trim() || customArea.trim().length < 2) {
+          errors.customArea = 'Please enter your primary locality or area';
+        }
+      } else if (isCustomAreaOnly) {
+        if (!customArea.trim() || customArea.trim().length < 2) {
+          errors.customArea = 'Please enter your primary locality or area';
+        } else {
+          const normalizedAreaInput = customArea.trim().toLowerCase();
+          const areaExists = availableAreas.some(
+            (a) => a.trim().toLowerCase() === normalizedAreaInput
+          );
+          if (areaExists) {
+            errors.customArea = 'This locality already exists in this city. Please select it from the Primary Locality dropdown.';
+          }
+        }
+      } else if (!area) {
         errors.area = 'Please choose your primary locality';
       }
 
       if (Object.keys(errors).length > 0) {
         setFieldErrors(errors);
-        setErrorMessage(Object.values(errors)[0]);
+        const invalidIds: string[] = [];
+        if (errors.nameEn) invalidIds.push('business-name');
+        if (errors.categories) invalidIds.push('seller-category-section');
+        if (errors.requestedCatNameEn) invalidIds.push('req-cat-name-en');
+        if (errors.customState) invalidIds.push('custom-state');
+        if (errors.customCity) invalidIds.push('custom-city');
+        if (errors.customArea) invalidIds.push('custom-area');
+        if (errors.area) invalidIds.push('primary-locality');
         setTimeout(() => {
-          const invalidIds: string[] = [];
-          if (errors.nameEn) invalidIds.push('business-name');
-          if (errors.requestedCatNameEn) invalidIds.push('req-cat-name-en');
-          if (errors.categories) invalidIds.push('seller-category-section');
-          if (errors.area) invalidIds.push('primary-locality');
           focusFirstInvalidField(invalidIds);
         }, 0);
         return;
@@ -180,7 +284,6 @@ export const SellerRegisterWizard: React.FC = () => {
       const validServices = services.filter((s) => s.nameEn.trim() && s.startingPrice > 0);
       if (validServices.length === 0 || Object.keys(errors).length > 0) {
         setFieldErrors(errors);
-        setErrorMessage(Object.values(errors)[0] || 'Please provide at least 1 service with a valid starting price');
         if (firstInvalidId) {
           setTimeout(() => focusFirstInvalidField([firstInvalidId]), 0);
         }
@@ -193,6 +296,14 @@ export const SellerRegisterWizard: React.FC = () => {
   const handleSubmit = async () => {
     setErrorMessage(null);
     setIsSubmitting(true);
+
+    const finalCitySlug = isCustomLocation
+      ? customCity
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+      : formCitySlug || 'ara';
 
     const payload: ApplySellerPayload = {
       nameEn: nameEn.trim(),
@@ -207,9 +318,16 @@ export const SellerRegisterWizard: React.FC = () => {
               description: requestedCatDesc.trim() || undefined,
             }
           : undefined,
-      city: selectedCity,
-      area,
-      areasServed: areasServed.length > 0 ? areasServed : [area],
+      city: finalCitySlug,
+      cityName: isCustomLocation ? customCity.trim() : selectedCityObj?.nameEn,
+      state: isCustomLocation ? customState.trim() : selectedCityObj?.stateEn,
+      area: resolvedArea,
+      areasServed:
+        isCustomLocation || isCustomAreaOnly
+          ? [resolvedArea]
+          : areasServed.length > 0
+          ? areasServed
+          : [resolvedArea],
       phone: phone.replace(/\D/g, ''),
       whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : undefined,
       bioEn: bioEn.trim() || undefined,
@@ -256,22 +374,10 @@ export const SellerRegisterWizard: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-900 mb-2">
           Application Submitted!
         </h2>
-        <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
           Thank you for registering <strong className="text-slate-800">{nameEn}</strong>. Our
           verification team will review your application and approve your listing shortly.
         </p>
-
-        <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-left text-xs text-indigo-950 space-y-1.5 mb-6">
-          <p className="font-bold flex items-center gap-1.5 text-indigo-900">
-            <span>🔑</span> Your Login Credentials After Approval:
-          </p>
-          <p>
-            Email: <strong className="text-indigo-950 font-mono">{email}</strong>
-          </p>
-          <p>
-            Initial Password: <strong className="text-indigo-950 font-mono">Test@123</strong> (assigned automatically when admin approves your listing)
-          </p>
-        </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/">
@@ -359,7 +465,7 @@ export const SellerRegisterWizard: React.FC = () => {
               error={fieldErrors.email}
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              Once approved by admin, you will use this email with initial password <strong>Test@123</strong> to log into your seller dashboard.
+              Once approved by admin, you will use this email to log into your seller dashboard.
             </p>
           </div>
 
@@ -559,46 +665,233 @@ export const SellerRegisterWizard: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="primary-locality" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Primary Locality *
-              </label>
-              <select
-                id="primary-locality"
-                value={area}
-                onChange={(e) => {
-                  setArea(e.target.value);
-                  setAreasServed([e.target.value]);
-                  if (fieldErrors.area) setFieldErrors((prev) => ({ ...prev, area: '' }));
-                }}
-                className={`w-full text-sm rounded-xl border p-2.5 font-medium transition-colors ${
-                  fieldErrors.area
-                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
-                    : 'border-slate-200 bg-slate-50'
-                }`}
-              >
-                {availableAreas.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Location Section: Existing City & Locality OR Add New City / State / Locality */}
+          <div className="space-y-3">
+            {!isCustomLocation ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="seller-city" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      City & State *
+                    </label>
+                    <select
+                      id="seller-city"
+                      value={formCitySlug}
+                      onChange={(e) => {
+                        if (e.target.value === '__new_city__') {
+                          setIsCustomLocation(true);
+                          return;
+                        }
+                        setFormCitySlug(e.target.value);
+                        setIsCustomAreaOnly(false);
+                        setCustomArea('');
+                      }}
+                      className="w-full text-sm rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium transition-colors"
+                    >
+                      {cities.map((c) => (
+                        <option key={c.slug} value={c.slug}>
+                          {c.nameEn} ({c.stateEn || 'Bihar'})
+                        </option>
+                      ))}
+                      <option value="__new_city__">+ Add New City / State...</option>
+                    </select>
+                  </div>
 
-            <div>
-              <label htmlFor="experience-years" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Years of Experience
-              </label>
-              <Input
-                id="experience-years"
-                type="number"
-                value={experience}
-                onChange={(e) => setExperience(Number(e.target.value))}
-                min={0}
-                max={50}
-              />
-            </div>
+                  <div>
+                    <label htmlFor="primary-locality" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Primary Locality *
+                    </label>
+                    {!isCustomAreaOnly ? (
+                      <>
+                        <select
+                          id="primary-locality"
+                          value={area}
+                          onChange={(e) => {
+                            if (e.target.value === '__new_area__') {
+                              setIsCustomAreaOnly(true);
+                              setCustomArea('');
+                              return;
+                            }
+                            setArea(e.target.value);
+                            setAreasServed([e.target.value]);
+                            if (fieldErrors.area) setFieldErrors((prev) => ({ ...prev, area: '' }));
+                          }}
+                          className={`w-full text-sm rounded-xl border p-2.5 font-medium transition-colors ${
+                            fieldErrors.area
+                              ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                              : 'border-slate-200 bg-slate-50'
+                          }`}
+                        >
+                          {availableAreas.map((a) => (
+                            <option key={a} value={a}>
+                              {a}
+                            </option>
+                          ))}
+                          <option value="__new_area__">+ Other / Enter New Locality...</option>
+                        </select>
+                        {fieldErrors.area && (
+                          <p className="text-xs text-red-600 font-medium mt-1">{fieldErrors.area}</p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-1">
+                        <Input
+                          id="custom-area"
+                          type="text"
+                          value={customArea}
+                          onChange={(e) => {
+                            setCustomArea(e.target.value);
+                            if (fieldErrors.customArea) {
+                              setFieldErrors((prev) => ({ ...prev, customArea: '' }));
+                            }
+                          }}
+                          placeholder="Enter locality name"
+                          error={fieldErrors.customArea}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomAreaOnly(false);
+                            setCustomArea('');
+                          }}
+                          className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+                        >
+                          ← Choose from existing localities
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="experience-years" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Years of Experience
+                    </label>
+                    <Input
+                      id="experience-years"
+                      type="number"
+                      value={experience}
+                      onChange={(e) => setExperience(Number(e.target.value))}
+                      min={0}
+                      max={50}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomLocation(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/70 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span>📍 City or State not listed? Register for a new City / State</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                    <span>📍 Register New City, State & Locality</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomLocation(false);
+                      setCustomState('');
+                      setCustomCity('');
+                      setCustomArea('');
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        customState: '',
+                        customCity: '',
+                        customArea: '',
+                      }));
+                    }}
+                    className="text-xs text-slate-500 hover:text-rose-600 font-semibold cursor-pointer"
+                  >
+                    ← Select from existing cities
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Enter your State, City, and Primary Locality below. Once your application is approved by admin, your city and locality will automatically go live on AraKart!
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="custom-state" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      State Name *
+                    </label>
+                    <Input
+                      id="custom-state"
+                      type="text"
+                      value={customState}
+                      onChange={(e) => {
+                        setCustomState(e.target.value);
+                        if (fieldErrors.customState) {
+                          setFieldErrors((prev) => ({ ...prev, customState: '' }));
+                        }
+                      }}
+                      placeholder="e.g. Uttar Pradesh, Bihar, Jharkhand"
+                      error={fieldErrors.customState}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="custom-city" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      City / District Name *
+                    </label>
+                    <Input
+                      id="custom-city"
+                      type="text"
+                      value={customCity}
+                      onChange={(e) => {
+                        setCustomCity(e.target.value);
+                        if (fieldErrors.customCity) {
+                          setFieldErrors((prev) => ({ ...prev, customCity: '' }));
+                        }
+                      }}
+                      placeholder="e.g. Varanasi, Gaya, Ranchi"
+                      error={fieldErrors.customCity}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="custom-area" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Primary Locality / Area *
+                    </label>
+                    <Input
+                      id="custom-area"
+                      type="text"
+                      value={customArea}
+                      onChange={(e) => {
+                        setCustomArea(e.target.value);
+                        if (fieldErrors.customArea) {
+                          setFieldErrors((prev) => ({ ...prev, customArea: '' }));
+                        }
+                      }}
+                      placeholder="e.g. Civil Lines, Station Road, Lanka"
+                      error={fieldErrors.customArea}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="experience-years" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                      Years of Experience
+                    </label>
+                    <Input
+                      id="experience-years"
+                      type="number"
+                      value={experience}
+                      onChange={(e) => setExperience(Number(e.target.value))}
+                      min={0}
+                      max={50}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -665,54 +958,61 @@ export const SellerRegisterWizard: React.FC = () => {
 
           <div className="space-y-3 pt-2">
             {services.map((srv, idx) => (
-              <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <input
-                  id={`service-name-${idx}`}
-                  type="text"
-                  value={srv.nameEn}
-                  onChange={(e) => {
-                    handleServiceChange(idx, 'nameEn', e.target.value);
-                    if (fieldErrors[`service_name_${idx}`]) {
-                      setFieldErrors((prev) => ({ ...prev, [`service_name_${idx}`]: '' }));
-                    }
-                  }}
-                  placeholder="e.g. Fan Repair / Switchboard Fix"
-                  className={`flex-1 text-sm rounded-xl border p-2.5 font-medium transition-colors ${
-                    fieldErrors[`service_name_${idx}`]
-                      ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
-                      : 'border-slate-200 bg-slate-50'
-                  }`}
-                />
-                <div className="relative w-full sm:w-32">
-                  <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
+              <div key={idx} className="space-y-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
-                    id={`service-price-${idx}`}
-                    type="number"
-                    value={srv.startingPrice}
+                    id={`service-name-${idx}`}
+                    type="text"
+                    value={srv.nameEn}
                     onChange={(e) => {
-                      handleServiceChange(idx, 'startingPrice', e.target.value);
-                      if (fieldErrors[`service_price_${idx}`]) {
-                        setFieldErrors((prev) => ({ ...prev, [`service_price_${idx}`]: '' }));
+                      handleServiceChange(idx, 'nameEn', e.target.value);
+                      if (fieldErrors[`service_name_${idx}`]) {
+                        setFieldErrors((prev) => ({ ...prev, [`service_name_${idx}`]: '' }));
                       }
                     }}
-                    placeholder="Price"
-                    min={0}
-                    className={`w-full text-sm rounded-xl border pl-7 pr-2.5 py-2.5 font-medium transition-colors ${
-                      fieldErrors[`service_price_${idx}`]
+                    placeholder="e.g. Fan Repair / Switchboard Fix"
+                    className={`flex-1 text-sm rounded-xl border p-2.5 font-medium transition-colors ${
+                      fieldErrors[`service_name_${idx}`]
                         ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
                         : 'border-slate-200 bg-slate-50'
                     }`}
                   />
+                  <div className="relative w-full sm:w-32">
+                    <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
+                    <input
+                      id={`service-price-${idx}`}
+                      type="number"
+                      value={srv.startingPrice}
+                      onChange={(e) => {
+                        handleServiceChange(idx, 'startingPrice', e.target.value);
+                        if (fieldErrors[`service_price_${idx}`]) {
+                          setFieldErrors((prev) => ({ ...prev, [`service_price_${idx}`]: '' }));
+                        }
+                      }}
+                      placeholder="Price"
+                      min={0}
+                      className={`w-full text-sm rounded-xl border pl-7 pr-2.5 py-2.5 font-medium transition-colors ${
+                        fieldErrors[`service_price_${idx}`]
+                          ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                          : 'border-slate-200 bg-slate-50'
+                      }`}
+                    />
+                  </div>
+                  {services.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveService(idx)}
+                      className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                      aria-label="Remove service"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                {services.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveService(idx)}
-                    className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-                    aria-label="Remove service"
-                  >
-                    ✕
-                  </button>
+                {(fieldErrors[`service_name_${idx}`] || fieldErrors[`service_price_${idx}`]) && (
+                  <p className="text-xs text-red-600 font-medium">
+                    {fieldErrors[`service_name_${idx}`] || fieldErrors[`service_price_${idx}`]}
+                  </p>
                 )}
               </div>
             ))}
@@ -746,8 +1046,12 @@ export const SellerRegisterWizard: React.FC = () => {
               </span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
+              <span className="text-slate-500 font-semibold">City & State:</span>
+              <span className="font-bold text-slate-900">{resolvedCityDisplay}</span>
+            </div>
+            <div className="flex justify-between pb-2 border-b border-slate-200">
               <span className="text-slate-500 font-semibold">Primary Locality:</span>
-              <span className="font-bold text-slate-900">{area}</span>
+              <span className="font-bold text-slate-900">{resolvedArea}</span>
             </div>
             <div className="flex justify-between pb-2 border-b border-slate-200">
               <span className="text-slate-500 font-semibold">Phone:</span>
