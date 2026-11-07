@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 import {
@@ -23,24 +23,45 @@ import { SellerOffersManager } from '../components/seller/SellerOffersManager';
 
 type DashboardTab = 'overview' | 'leads' | 'catalogue' | 'offers' | 'reviews' | 'profile';
 
+const VALID_TABS: DashboardTab[] = ['overview', 'leads', 'catalogue', 'offers', 'reviews', 'profile'];
+
 export const SellerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as DashboardTab | null;
+
   const { isAuthenticated } = useAuthStore();
   const { addToast } = useUiStore();
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
+    return tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'overview';
+  });
+
+  useEffect(() => {
+    if (tabParam && VALID_TABS.includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, activeTab]);
+
+  const handleTabChange = (tab: DashboardTab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [stats, setStats] = useState<SellerStatsResponse | null>(null);
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItemData[]>([]);
+  const [totalReviewsCount, setTotalReviewsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [unreadLeadsCount, setUnreadLeadsCount] = useState(0);
 
   const { socket } = useSocket(profile?.id);
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const [profData, statsData] = await Promise.all([
         getMySellerProfile(),
         getSellerStats(),
@@ -67,10 +88,12 @@ export const SellerDashboardPage: React.FC = () => {
       }
 
       // Fetch initial reviews if profile exists
-      if (profData?.id) {
+      const targetProviderId = profData?.id || (profData as any)?._id;
+      if (targetProviderId) {
         try {
-          const revRes = await fetchProviderReviews(profData.id, 1, 20);
+          const revRes = await fetchProviderReviews(targetProviderId, 1, 20);
           setReviews(revRes.reviews || []);
+          setTotalReviewsCount(revRes.summary?.totalReviews ?? revRes.reviews?.length ?? 0);
         } catch (err) {
           console.error('Failed to load seller reviews:', err);
         }
@@ -82,7 +105,9 @@ export const SellerDashboardPage: React.FC = () => {
         addToast(err.response?.data?.message || 'Failed to load seller dashboard', 'error');
       }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [addToast]);
 
@@ -247,7 +272,7 @@ export const SellerDashboardPage: React.FC = () => {
       <div className="flex overflow-x-auto no-scrollbar gap-2 py-4 border-b border-border-light">
         <button
           onClick={() => {
-            setActiveTab('overview');
+            handleTabChange('overview');
           }}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'overview'
@@ -260,7 +285,7 @@ export const SellerDashboardPage: React.FC = () => {
 
         <button
           onClick={() => {
-            setActiveTab('leads');
+            handleTabChange('leads');
             setUnreadLeadsCount(0);
           }}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap relative ${
@@ -278,7 +303,7 @@ export const SellerDashboardPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('catalogue')}
+          onClick={() => handleTabChange('catalogue')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'catalogue'
               ? 'bg-brand-primary text-white shadow-sm'
@@ -289,7 +314,7 @@ export const SellerDashboardPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('offers')}
+          onClick={() => handleTabChange('offers')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'offers'
               ? 'bg-brand-primary text-white shadow-sm'
@@ -300,18 +325,18 @@ export const SellerDashboardPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('reviews')}
+          onClick={() => handleTabChange('reviews')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'reviews'
               ? 'bg-brand-primary text-white shadow-sm'
               : 'text-ink-muted hover:text-ink hover:bg-slate-100'
           }`}
         >
-          ⭐ Customer Reviews ({reviews.length})
+          ⭐ Customer Reviews ({totalReviewsCount !== null ? totalReviewsCount : reviews.length})
         </button>
 
         <button
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleTabChange('profile')}
           className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'profile'
               ? 'bg-brand-primary text-white shadow-sm'

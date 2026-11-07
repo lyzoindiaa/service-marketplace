@@ -9,6 +9,13 @@ vi.mock('../../../services/sellerService', () => ({
   deleteSellerPhoto: vi.fn(),
 }));
 
+vi.mock('../../../services/discoveryService', () => ({
+  fetchCategories: vi.fn().mockResolvedValue([
+    { id: 'c1', slug: 'electrician', nameEn: 'Electrician', nameHi: 'इलेक्ट्रीशियन', enabled: true },
+    { id: 'c2', slug: 'plumber', nameEn: 'Plumber', nameHi: 'प्लंबर', enabled: true },
+  ]),
+}));
+
 const mockProfile: any = {
   id: 'prov_test_1',
   nameEn: 'Verma Electric Works',

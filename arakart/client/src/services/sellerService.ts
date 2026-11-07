@@ -1,10 +1,18 @@
 import api from '../lib/axios';
 import { ProviderProfile, ProviderServiceItem } from './providerService';
 
+export interface RequestedCategoryPayload {
+  nameEn: string;
+  nameHi?: string;
+  description?: string;
+}
+
 export interface ApplySellerPayload {
   nameEn: string;
   nameHi?: string;
+  email?: string;
   categories: string[];
+  requestedCategory?: RequestedCategoryPayload;
   city?: string;
   area: string;
   areasServed?: string[];

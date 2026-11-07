@@ -14,6 +14,7 @@ const SellerRegisterPage = lazy(() => import('./pages/SellerRegisterPage').then(
 const SellerDashboardPage = lazy(() => import('./pages/SellerDashboardPage').then((m) => ({ default: m.SellerDashboardPage })));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })));
 const CustomerFavouritesPage = lazy(() => import('./pages/CustomerFavouritesPage').then((m) => ({ default: m.CustomerFavouritesPage })));
+const ProfileRedirectPage = lazy(() => import('./pages/ProfileRedirectPage').then((m) => ({ default: m.ProfileRedirectPage })));
 const BlogsPage = lazy(() => import('./pages/BlogsPage').then((m) => ({ default: m.BlogsPage })));
 const OffersPage = lazy(() => import('./pages/OffersPage').then((m) => ({ default: m.OffersPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
@@ -44,6 +45,7 @@ export const App: React.FC = () => {
             <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/blogs/:slug" element={<BlogsPage />} />
             <Route path="/register-seller" element={<SellerRegisterPage />} />
+            <Route path="/profile" element={<ProfileRedirectPage />} />
 
             {/* Customer routes */}
             <Route

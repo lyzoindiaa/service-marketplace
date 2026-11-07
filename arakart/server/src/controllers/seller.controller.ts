@@ -10,19 +10,13 @@ import { sendSuccess, sendError } from '../utils/responseHelper';
 
 export const applySeller = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.userId;
-    if (!userId) {
-      sendError(res, 'Authentication required to register as seller', 401);
-      return;
-    }
-
     const parseResult = applySellerSchema.safeParse(req.body);
     if (!parseResult.success) {
       sendError(res, 'Invalid seller application data', 400, 'VALIDATION_ERROR', parseResult.error.errors);
       return;
     }
 
-    const provider = await sellerService.applyAsSeller(userId, parseResult.data);
+    const provider = await sellerService.applyAsSeller(req.user?.userId, parseResult.data);
     sendSuccess(res, provider, 'Seller application submitted successfully', 201);
   } catch (error: any) {
     sendError(res, error.message || 'Failed to submit seller application', error.statusCode || 500);

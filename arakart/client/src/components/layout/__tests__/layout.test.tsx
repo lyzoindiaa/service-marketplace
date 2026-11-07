@@ -83,6 +83,65 @@ describe('Header, Footer & Layout (FE-003)', () => {
       fireEvent.click(langBtn);
       expect(i18n.language).toBe('en');
     });
+
+    it('replaces topbar items for seller: shows Home and Seller Dashboard, hides Offers, Blogs, Become Seller', () => {
+      useAuthStore.getState().setAuth(
+        {
+          id: 's1',
+          name: 'Ramesh Mechanic',
+          phone: '9876543210',
+          role: 'seller',
+          authMethods: ['phone'],
+          sellerId: 'sel_123',
+        },
+        'mock-token'
+      );
+
+      render(
+        <BrowserRouter>
+          <Header />
+        </BrowserRouter>
+      );
+
+      // Home and Seller Dashboard should be in document
+      expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /seller dashboard/i })).toBeInTheDocument();
+
+      // Offers, Blogs, Become Seller, Find Services should NOT be shown in topbar
+      expect(screen.queryByRole('link', { name: /offers/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /blogs/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /become a seller/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /find services/i })).toBeNull();
+    });
+
+    it('replaces topbar items for super admin: shows Home and Admin Console, hides Offers, Blogs, Become Seller', () => {
+      useAuthStore.getState().setAuth(
+        {
+          id: 'a1',
+          name: 'AraKart Admin',
+          email: 'admin@arakart.local',
+          role: 'admin',
+          authMethods: ['email'],
+        },
+        'mock-token'
+      );
+
+      render(
+        <BrowserRouter>
+          <Header />
+        </BrowserRouter>
+      );
+
+      // Home and Admin Console should be in document
+      expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /admin console/i })).toBeInTheDocument();
+
+      // Offers, Blogs, Become Seller, Find Services should NOT be shown in topbar
+      expect(screen.queryByRole('link', { name: /offers/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /blogs/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /become a seller/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /find services/i })).toBeNull();
+    });
   });
 
   describe('Footer', () => {

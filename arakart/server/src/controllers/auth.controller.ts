@@ -179,7 +179,8 @@ export class AuthController {
     try {
       const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
       if (!refreshToken) {
-        sendError(res, 'Refresh token required in cookie or body', 401);
+        clearRefreshTokenCookie(res);
+        sendError(res, 'No active session', 401);
         return;
       }
 

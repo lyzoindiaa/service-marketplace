@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Tag,
   Plus,
+  X,
   Trash2,
   Calendar,
   Clock,
@@ -21,6 +22,7 @@ import { useUiStore } from '../../store/uiStore';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Spinner } from '../common/Spinner';
+import { focusFirstInvalidField } from '../../lib/focusFirstInvalid';
 
 interface SellerOffersManagerProps {
   services: ProviderServiceItem[];
@@ -42,6 +44,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
   const [titleHi, setTitleHi] = useState('');
   const [descriptionEn, setDescriptionEn] = useState('');
   const [scheduleType, setScheduleType] = useState<OfferScheduleType>('date_range');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Date range + work hours
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -56,15 +59,19 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
   const [slotStartHour, setSlotStartHour] = useState('14:00');
   const [slotEndHour, setSlotEndHour] = useState('16:00');
 
-  const loadSellerOffers = useCallback(async () => {
+  const loadSellerOffers = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const list = await fetchSellerOffers();
       setOffers(list);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load seller offers', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [addToast]);
 
@@ -88,22 +95,40 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
       : customServiceTitleEn.trim();
     const resolvedServiceTitleHi = chosenService ? chosenService.nameHi || '' : '';
 
+    const errors: Record<string, string> = {};
+
     if (!resolvedServiceTitleEn) {
-      addToast('Please select or enter a service name for this offer', 'error');
-      return;
+      errors.service = 'Please select or enter a service name for this offer';
+    }
+
+    if (!titleEn.trim()) {
+      errors.titleEn = 'Offer headline is required';
     }
 
     const orig = Number(originalPrice);
     const disc = Number(offerPrice);
-    if (!orig || !disc || disc >= orig) {
-      addToast('Offer price must be lower than original price', 'error');
+    if (!orig || orig <= 0) {
+      errors.originalPrice = 'Valid original price is required';
+    }
+    if (!disc || disc <= 0) {
+      errors.offerPrice = 'Valid discounted price is required';
+    } else if (orig > 0 && disc >= orig) {
+      errors.offerPrice = 'Offer price must be lower than original price';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const invalidIds: string[] = [];
+      if (errors.service) invalidIds.push('offer-custom-service');
+      if (errors.titleEn) invalidIds.push('offer-title-en');
+      if (errors.originalPrice) invalidIds.push('offer-orig-price');
+      if (errors.offerPrice) invalidIds.push('offer-disc-price');
+      setTimeout(() => focusFirstInvalidField(invalidIds), 0);
+      addToast(Object.values(errors)[0], 'error');
       return;
     }
 
-    if (!titleEn.trim()) {
-      addToast('Offer title is required', 'error');
-      return;
-    }
+    setFieldErrors({});
 
     try {
       setSubmitting(true);
@@ -137,7 +162,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
       setTitleHi('');
       setDescriptionEn('');
       setOfferPrice('');
-      await loadSellerOffers();
+      await loadSellerOffers(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to create service offer', 'error');
     } finally {
@@ -152,7 +177,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
         !offer.isActive ? 'Offer activated' : 'Offer paused',
         'success'
       );
-      await loadSellerOffers();
+      await loadSellerOffers(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to update offer', 'error');
     }
@@ -162,7 +187,7 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
     try {
       await deleteSellerOffer(offerId);
       addToast('Offer deleted', 'success');
-      await loadSellerOffers();
+      await loadSellerOffers(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to delete offer', 'error');
     }
@@ -188,9 +213,23 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
             Apply special discounts on a particular service for a Date Range + Work Hours or a Single Day + Specific Hour Slot.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowCreateForm((v) => !v)}>
-          <Plus className="w-4 h-4 mr-1" />
-          {showCreateForm ? 'Cancel' : 'Create Service Offer'}
+        <Button
+          size="md"
+          variant={showCreateForm ? 'outline' : 'primary'}
+          className="w-48"
+          onClick={() => setShowCreateForm((v) => !v)}
+        >
+          {showCreateForm ? (
+            <>
+              <X className="w-4 h-4 mr-1.5" />
+              <span>Close</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-1.5" />
+              <span>Add Service Offer</span>
+            </>
+          )}
         </Button>
       </div>
 
@@ -213,7 +252,10 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
               {services.length > 0 ? (
                 <select
                   value={selectedServiceIndex}
-                  onChange={(e) => setSelectedServiceIndex(Number(e.target.value))}
+                  onChange={(e) => {
+                    setSelectedServiceIndex(Number(e.target.value));
+                    if (fieldErrors.service) setFieldErrors((prev) => ({ ...prev, service: '' }));
+                  }}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                 >
                   {services.map((svc, idx) => (
@@ -224,59 +266,96 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
                 </select>
               ) : (
                 <input
+                  id="offer-custom-service"
                   type="text"
-                  required
                   value={customServiceTitleEn}
-                  onChange={(e) => setCustomServiceTitleEn(e.target.value)}
+                  onChange={(e) => {
+                    setCustomServiceTitleEn(e.target.value);
+                    if (fieldErrors.service) setFieldErrors((prev) => ({ ...prev, service: '' }));
+                  }}
                   placeholder="e.g. Split AC Foam Jet Servicing"
-                  className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl"
+                  className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors ${
+                    fieldErrors.service
+                      ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                      : 'border-slate-200'
+                  }`}
                 />
               )}
             </div>
 
             {/* Offer Title */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label htmlFor="offer-title-en" className="block text-xs font-bold text-slate-700 mb-1.5">
                 Offer Headline (English) *
               </label>
               <input
+                id="offer-title-en"
                 type="text"
-                required
                 value={titleEn}
-                onChange={(e) => setTitleEn(e.target.value)}
+                onChange={(e) => {
+                  setTitleEn(e.target.value);
+                  if (fieldErrors.titleEn) setFieldErrors((prev) => ({ ...prev, titleEn: '' }));
+                }}
                 placeholder="e.g. Summer Afternoon AC Servicing Deal"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl"
+                className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors ${
+                  fieldErrors.titleEn
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200'
+                }`}
               />
+              {fieldErrors.titleEn && (
+                <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.titleEn}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label htmlFor="offer-orig-price" className="block text-xs font-bold text-slate-700 mb-1.5">
                 Original Service Price (₹) *
               </label>
               <input
+                id="offer-orig-price"
                 type="number"
-                required
                 min={1}
                 value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
+                onChange={(e) => {
+                  setOriginalPrice(e.target.value);
+                  if (fieldErrors.originalPrice) setFieldErrors((prev) => ({ ...prev, originalPrice: '' }));
+                }}
                 placeholder="599"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl"
+                className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors ${
+                  fieldErrors.originalPrice
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200'
+                }`}
               />
+              {fieldErrors.originalPrice && (
+                <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.originalPrice}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label htmlFor="offer-disc-price" className="block text-xs font-bold text-slate-700 mb-1.5">
                 Discounted Offer Price (₹) *
               </label>
               <input
+                id="offer-disc-price"
                 type="number"
-                required
                 min={1}
                 value={offerPrice}
-                onChange={(e) => setOfferPrice(e.target.value)}
+                onChange={(e) => {
+                  setOfferPrice(e.target.value);
+                  if (fieldErrors.offerPrice) setFieldErrors((prev) => ({ ...prev, offerPrice: '' }));
+                }}
                 placeholder="399"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl"
+                className={`w-full px-3.5 py-2.5 text-sm border rounded-xl transition-colors ${
+                  fieldErrors.offerPrice
+                    ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200 bg-white'
+                    : 'border-slate-200'
+                }`}
               />
+              {fieldErrors.offerPrice && (
+                <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.offerPrice}</p>
+              )}
             </div>
           </div>
 
@@ -432,12 +511,19 @@ export const SellerOffersManager: React.FC<SellerOffersManagerProps> = ({ servic
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="md"
+              className="w-36"
               onClick={() => setShowCreateForm(false)}
             >
-              Cancel
+              Close
             </Button>
-            <Button type="submit" size="sm" isLoading={submitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-36"
+              isLoading={submitting}
+            >
               Publish Offer
             </Button>
           </div>

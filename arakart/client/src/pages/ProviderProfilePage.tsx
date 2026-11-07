@@ -171,8 +171,11 @@ export const ProviderProfilePage: React.FC = () => {
   const initial = displayName ? displayName.charAt(0).toUpperCase() : 'P';
   const bio = language === 'hi' && provider.bioHi ? provider.bioHi : provider.bioEn;
 
-  const totalReviews = reviewsData?.summary.totalReviews || provider.reviewCount || 0;
-  const avgRating = reviewsData?.summary.avgRating || provider.avgRating || 0;
+  const totalReviews = reviewsData ? reviewsData.summary.totalReviews : (provider.reviewCount || 0);
+  const avgRating =
+    reviewsData && reviewsData.summary.totalReviews > 0
+      ? reviewsData.summary.avgRating
+      : (provider.avgRating || 0);
   const breakdown = reviewsData?.summary.breakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
 
   return (
@@ -236,6 +239,16 @@ export const ProviderProfilePage: React.FC = () => {
                       <Badge variant="verified" className="text-xs py-1">
                         ✓ Verified Business
                       </Badge>
+                    )}
+                    {provider.status === 'pending' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                        ⏳ Pending Approval (Preview Mode)
+                      </span>
+                    )}
+                    {!provider.isLive && provider.status === 'approved' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                        ⏸️ Currently Paused / Offline
+                      </span>
                     )}
                     {providerOffers.length > 0 && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800">
@@ -458,7 +471,7 @@ export const ProviderProfilePage: React.FC = () => {
               </div>
 
               {/* Pagination */}
-              {reviewsData && reviewsData.pagination.pages > 1 && (
+              {reviewsData?.pagination && reviewsData.pagination.pages > 1 && (
                 <div className="pt-6 border-t border-slate-100">
                   <Pagination
                     currentPage={reviewsPage}

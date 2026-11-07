@@ -21,7 +21,7 @@ export const getProviders = async (req: Request, res: Response): Promise<void> =
 export const getProviderById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const provider = await providerService.getProviderById(id);
+    const provider = await providerService.getProviderById(id, req.user);
 
     if (!provider) {
       sendError(res, 'Provider not found', 404);

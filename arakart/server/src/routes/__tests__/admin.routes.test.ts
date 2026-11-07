@@ -177,6 +177,29 @@ describe('Admin Service & Routes (BE-011)', () => {
       expect(blockedRes.status).toBe(403);
       expect(blockedRes.body.message).toMatch(/suspended/i);
     });
+
+    it('PATCH /api/v1/admin/users/:id/suspend prevents an administrator from suspending their own account', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/admin/users/${adminUser._id}/suspend`)
+        .set(adminAuthHeader)
+        .send({ suspended: true });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/cannot suspend their own account/i);
+    });
+
+    it('PATCH /api/v1/admin/users/:id/suspend prevents suspending an administrator account', async () => {
+      const otherAdmin = await makeUser({ role: 'admin', email: 'otheradmin@arakart.test' });
+      const res = await request(app)
+        .patch(`/api/v1/admin/users/${otherAdmin._id}/suspend`)
+        .set(adminAuthHeader)
+        .send({ suspended: true });
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/cannot suspend an administrator/i);
+    });
   });
 
   describe('Report Moderation & Live Activity', () => {

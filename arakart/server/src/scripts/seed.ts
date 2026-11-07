@@ -7,6 +7,7 @@ import { User } from '../models/User.model';
 import { Provider } from '../models/Provider.model';
 import { Review } from '../models/Review.model';
 import { Lead } from '../models/Lead.model';
+import { reviewService } from '../services/review.service';
 import { logger } from '../utils/logger';
 import { CATEGORIES_SEED } from './data/categories';
 import { CITIES_SEED } from './data/cities';
@@ -186,33 +187,113 @@ export async function runSeed(options: SeedOptions = {}): Promise<SeedSummary> {
     }
     logger.info(`Demo Providers: ${summary.demoProvidersInserted} inserted, ${summary.demoProvidersSkipped} skipped.`);
 
-    // 4d. Demo Reviews (link first 2 providers to demo customer if not already reviewed)
-    if (createdProviders.length >= 2 && demoCustomer) {
-      const p1 = createdProviders[0];
-      const p2 = createdProviders[1];
-
-      const existingReview1 = await Review.findOne({ provider: p1._id, customer: demoCustomer._id });
-      if (!existingReview1) {
-        await Review.create({
-          provider: p1._id,
-          customer: demoCustomer._id,
-          customerName: demoCustomer.name || 'Rahul Kumar',
+    // 4d. Demo Reviews across providers
+    if (createdProviders.length > 0 && demoCustomer) {
+      const demoReviewTemplates = [
+        {
+          providerIndex: 0,
+          customerName: 'Rahul Kumar',
           rating: 5,
           comment: 'Very fast and professional service in Nawada! Fixed my bike within 30 minutes.',
-        });
-        summary.demoReviewsInserted++;
+          sellerReply: 'Thank you Rahul ji! Happy to assist you anytime.',
+        },
+        {
+          providerIndex: 0,
+          customerName: 'Anand Singh',
+          rating: 4,
+          comment: 'Genuine engine oil change and chain adjustment at fair starting prices.',
+        },
+        {
+          providerIndex: 1,
+          customerName: 'Rahul Kumar',
+          rating: 5,
+          comment: 'Great electrician in Katira. Installed our inverter and MCB cleanly.',
+          sellerReply: 'Dhanyawad Rahul bhai! Always glad to provide reliable service.',
+        },
+        {
+          providerIndex: 1,
+          customerName: 'Priya Verma',
+          rating: 5,
+          comment: 'Quick response on WhatsApp. Resolved wiring issue in Nawada within 45 minutes.',
+        },
+        {
+          providerIndex: 2,
+          customerName: 'Sunil Kumar',
+          rating: 5,
+          comment: 'Fixed our leaking bathroom pipe and replaced tap washers. Very neat work.',
+          sellerReply: 'Thank you Sunil ji for trusting our plumbing work.',
+        },
+        {
+          providerIndex: 2,
+          customerName: 'Neha Sharma',
+          rating: 4,
+          comment: 'Punctual and charges were exactly as discussed beforehand.',
+        },
+        {
+          providerIndex: 3,
+          customerName: 'Vikram Patel',
+          rating: 5,
+          comment: 'Modular wooden wardrobe and door frame repaired neatly in Anaith. Sturdy polish!',
+          sellerReply: 'Thank you Vikram ji! We take pride in quality woodwork.',
+        },
+        {
+          providerIndex: 4,
+          customerName: 'Alok Mishra',
+          rating: 5,
+          comment: 'Water tank and home deep cleaning was impeccable. Mechanized vacuum used.',
+        },
+        {
+          providerIndex: 5,
+          customerName: 'Sneha Kumari',
+          rating: 5,
+          comment: 'Bridal makeup and skin facial was outstanding. Very hygienic salon setup.',
+        },
+        {
+          providerIndex: 6,
+          customerName: 'Ritu Gupta',
+          rating: 5,
+          comment: 'AC jet cleaning and gas leak fix done swiftly before peak summer heat.',
+          sellerReply: 'Thank you Ritu ji for your feedback!',
+        },
+      ];
+
+      for (const rev of demoReviewTemplates) {
+        if (rev.providerIndex < createdProviders.length) {
+          const prov = createdProviders[rev.providerIndex];
+
+          let reviewCustomer = await User.findOne({ name: rev.customerName });
+          if (!reviewCustomer) {
+            const phoneSuffix = (summary.demoReviewsInserted + 10).toString().padStart(2, '0');
+            reviewCustomer = await User.create({
+              name: rev.customerName,
+              phone: `98000000${phoneSuffix}`,
+              role: 'customer',
+              phoneVerified: true,
+            });
+          }
+
+          const existing = await Review.findOne({
+            provider: prov._id,
+            customer: reviewCustomer._id,
+          });
+          if (!existing) {
+            await Review.create({
+              provider: prov._id,
+              customer: reviewCustomer._id,
+              customerName: rev.customerName,
+              rating: rev.rating,
+              comment: rev.comment,
+              sellerReply: rev.sellerReply || null,
+              sellerRepliedAt: rev.sellerReply ? new Date() : null,
+            });
+            summary.demoReviewsInserted++;
+          }
+        }
       }
 
-      const existingReview2 = await Review.findOne({ provider: p2._id, customer: demoCustomer._id });
-      if (!existingReview2) {
-        await Review.create({
-          provider: p2._id,
-          customer: demoCustomer._id,
-          customerName: demoCustomer.name || 'Rahul Kumar',
-          rating: 5,
-          comment: 'Great electrician in Katira. Installed our inverter cleanly.',
-        });
-        summary.demoReviewsInserted++;
+      // Dynamically synchronize provider ratings with actual reviews in DB
+      for (const prov of createdProviders) {
+        await reviewService.recalculateProviderRating(prov._id.toString());
       }
     }
 

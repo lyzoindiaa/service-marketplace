@@ -47,11 +47,11 @@ export class ProviderService {
       isLive: true,
     };
 
-    if (city) {
+    if (city && city.trim() && city.trim().toLowerCase() !== 'all') {
       filter.city = { $regex: new RegExp(`^${escapeRegex(city.trim())}$`, 'i') };
     }
 
-    if (category) {
+    if (category && category.trim() && category.trim().toLowerCase() !== 'all') {
       filter.categories = category.trim().toLowerCase();
     }
 
@@ -83,6 +83,8 @@ export class ProviderService {
         { bioEn: { $regex: searchTerm, $options: 'i' } },
         { bioHi: { $regex: searchTerm, $options: 'i' } },
         { 'services.nameEn': { $regex: searchTerm, $options: 'i' } },
+        { 'services.nameHi': { $regex: searchTerm, $options: 'i' } },
+        { categories: { $regex: searchTerm, $options: 'i' } },
       ];
 
       if (filter.$or) {
@@ -136,29 +138,41 @@ export class ProviderService {
     };
   }
 
-  async getProviderById(id: string): Promise<any | null> {
+  async getProviderById(id: string, user?: { userId: string; role: string }): Promise<any | null> {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error: any = new Error(`Invalid provider id: ${id}`);
       error.statusCode = 400;
       throw error;
     }
 
-    // Atomically increment profileViews
-    const doc = await Provider.findOneAndUpdate(
-      { _id: id, status: 'approved', isLive: true },
-      { $inc: { profileViews: 1 } },
-      { new: true }
-    );
-
-    if (!doc) {
+    const provider = await Provider.findById(id);
+    if (!provider) {
       return null;
     }
 
-    const json = doc.toJSON ? doc.toJSON() : doc.toObject();
+    const isOwner = Boolean(user && provider.owner && provider.owner.toString() === user.userId);
+    const isAdmin = Boolean(user && user.role === 'admin');
+
+    // If provider is not approved yet, only owner or admin can view the profile (e.g. preview)
+    if (provider.status !== 'approved' && !isOwner && !isAdmin) {
+      return null;
+    }
+
+    // Atomically increment profileViews for public visitors on approved live listings
+    if (provider.status === 'approved' && provider.isLive && !isOwner && !isAdmin) {
+      await Provider.updateOne({ _id: id }, { $inc: { profileViews: 1 } });
+      provider.profileViews = (provider.profileViews || 0) + 1;
+    }
+
+    const json = provider.toJSON ? provider.toJSON() : provider.toObject();
     return {
       ...json,
-      phone: maskPhoneNumber(json.phone),
-      whatsapp: json.whatsapp ? maskPhoneNumber(json.whatsapp) : undefined,
+      phone: isOwner || isAdmin ? json.phone : maskPhoneNumber(json.phone),
+      whatsapp: json.whatsapp
+        ? isOwner || isAdmin
+          ? json.whatsapp
+          : maskPhoneNumber(json.whatsapp)
+        : undefined,
     };
   }
 
@@ -173,8 +187,9 @@ export class ProviderService {
       status: 'approved',
       isLive: true,
     };
-    if (city && city.trim() && city.trim().toLowerCase() !== 'all') {
-      providerFilter.city = { $regex: new RegExp(`^${escapeRegex(city.trim())}$`, 'i') };
+    const isFilteredCity = Boolean(city && city.trim() && city.trim().toLowerCase() !== 'all');
+    if (isFilteredCity) {
+      providerFilter.city = { $regex: new RegExp(`^${escapeRegex(city!.trim())}$`, 'i') };
     }
 
     const [verifiedProvidersCount, categoriesCount, cityProviders] = await Promise.all([
@@ -184,7 +199,7 @@ export class ProviderService {
     ]);
 
     const providerIds = cityProviders.map((p) => p._id);
-    const reviewFilter = providerIds.length > 0 ? { provider: { $in: providerIds } } : {};
+    const reviewFilter = isFilteredCity ? { provider: { $in: providerIds } } : {};
 
     const [totalReviews, ratingAgg, recentReviewDocs] = await Promise.all([
       Review.countDocuments(reviewFilter),
@@ -204,18 +219,20 @@ export class ProviderService {
         ? Number(ratingAgg[0].avg.toFixed(1))
         : 0;
 
-    const recentReviews = recentReviewDocs.map((r: any) => ({
-      id: r._id.toString(),
-      customerName: r.customerName || 'Verified Customer',
-      rating: r.rating,
-      comment: r.comment,
-      sellerReply: r.sellerReply,
-      providerId: r.provider?._id?.toString() || '',
-      providerNameEn: r.provider?.nameEn || 'Local Professional',
-      providerNameHi: r.provider?.nameHi || r.provider?.nameEn || '',
-      providerArea: r.provider?.area || '',
-      createdAt: r.createdAt,
-    }));
+    const recentReviews = recentReviewDocs
+      .filter((r: any) => r.provider)
+      .map((r: any) => ({
+        id: r._id.toString(),
+        customerName: r.customerName || 'Verified Customer',
+        rating: r.rating,
+        comment: r.comment,
+        sellerReply: r.sellerReply,
+        providerId: r.provider?._id?.toString() || '',
+        providerNameEn: r.provider?.nameEn || 'Local Professional',
+        providerNameHi: r.provider?.nameHi || r.provider?.nameEn || '',
+        providerArea: r.provider?.area || '',
+        createdAt: r.createdAt,
+      }));
 
     return {
       verifiedProvidersCount,

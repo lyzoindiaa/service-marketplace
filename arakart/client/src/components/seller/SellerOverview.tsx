@@ -15,24 +15,26 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
   stats,
   onLiveToggled,
 }) => {
+  const effectiveStatus = (stats?.status || profile?.status || 'pending').toLowerCase();
+
   const kpis = [
     {
       title: 'Profile Views',
-      value: stats.profileViews,
+      value: stats.profileViews || 0,
       icon: '👁️',
       color: 'from-blue-500 to-indigo-600',
       description: 'Local customer profile views',
     },
     {
       title: 'Call Inquiries',
-      value: stats.callClicks,
+      value: stats.callClicks || 0,
       icon: '📞',
       color: 'from-emerald-500 to-teal-600',
       description: 'Direct call leads generated',
     },
     {
       title: 'WhatsApp Chats',
-      value: stats.whatsappClicks,
+      value: stats.whatsappClicks || 0,
       icon: '💬',
       color: 'from-green-500 to-emerald-600',
       description: 'Direct message chats initiated',
@@ -42,7 +44,7 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
       value: stats.avgRating ? stats.avgRating.toFixed(1) : 'New',
       icon: '⭐',
       color: 'from-amber-400 to-orange-500',
-      description: `Based on ${stats.reviewCount} customer reviews`,
+      description: `Based on ${stats.reviewCount || 0} customer reviews`,
     },
   ];
 
@@ -55,14 +57,14 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
             <h2 className="text-xl font-bold text-slate-900">{profile.nameEn}</h2>
             <Badge
               variant={
-                stats.status === 'approved'
+                effectiveStatus === 'approved'
                   ? 'verified'
-                  : stats.status === 'pending'
+                  : effectiveStatus === 'pending'
                   ? 'pending'
                   : 'closed'
               }
             >
-              {stats.status.toUpperCase()}
+              {effectiveStatus.toUpperCase()}
             </Badge>
           </div>
           <p className="text-xs text-slate-500">
@@ -73,7 +75,7 @@ export const SellerOverview: React.FC<SellerOverviewProps> = ({
 
         <ListingToggle
           isLive={stats.isLive}
-          status={stats.status}
+          status={effectiveStatus as any}
           onToggled={onLiveToggled}
         />
       </div>

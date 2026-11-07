@@ -5,15 +5,40 @@ import { Lead } from '../models/Lead.model';
 import { deletePhotoFromCloudinary } from '../config/cloudinary';
 
 export class SellerService {
-  async applyAsSeller(userId: string, data: any): Promise<any> {
-    const user = await User.findById(userId);
-    if (!user) {
-      const error: any = new Error('User account not found');
-      error.statusCode = 404;
-      throw error;
+  async applyAsSeller(userId?: string, data: any = {}): Promise<any> {
+    let user: any = null;
+
+    if (userId) {
+      user = await User.findById(userId);
     }
 
-    // Check if user already has a provider
+    const email = data.email ? data.email.toLowerCase().trim() : undefined;
+    const phone = data.phone ? data.phone.trim() : undefined;
+
+    // If no authenticated user, look up existing user by email or phone
+    if (!user && email) {
+      user = await User.findOne({ email });
+    }
+    if (!user && phone) {
+      user = await User.findOne({ phone });
+    }
+
+    // If still no user record exists, create one for this applicant
+    if (!user) {
+      const applicantName = data.nameEn || 'Service Provider';
+      user = await User.create({
+        name: applicantName,
+        email: email || undefined,
+        phone: phone || undefined,
+        role: 'customer', // elevated to 'seller' on admin approval
+        emailVerified: false,
+        phoneVerified: false,
+        passwordHash: null, // password assigned on admin approval (Test@123)
+        authMethods: email ? ['email'] : ['phone'],
+      });
+    }
+
+    // Check if user already has a provider profile
     const existing = await Provider.findOne({ owner: user._id });
     if (existing) {
       const error: any = new Error('You have already applied or registered as a service provider');
@@ -29,15 +54,17 @@ export class SellerService {
 
     const provider = await Provider.create({
       ...data,
+      categories: data.categories || [],
+      requestedCategory: data.requestedCategory || undefined,
+      email,
       owner: user._id,
-      city: (data.city || 'ara').toLowerCase().trim(),
+      city: (data.city || 'all').toLowerCase().trim(),
       status: 'pending',
       isLive: false,
       verified: false,
       fromPrice: minPrice,
     });
 
-    user.role = 'seller';
     user.sellerId = provider._id as any;
     await user.save();
 

@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, forwardRef } from 'react';
 
 export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
   label?: string;
@@ -8,7 +8,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   suffix?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   helperText,
@@ -18,7 +18,7 @@ export const Input: React.FC<InputProps> = ({
   className = '',
   disabled,
   ...props
-}) => {
+}, ref) => {
   const generatedId = useId();
   const inputId = id || generatedId;
 
@@ -41,13 +41,14 @@ export const Input: React.FC<InputProps> = ({
         )}
 
         <input
+          ref={ref}
           id={inputId}
           disabled={disabled}
           className={`block w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed ${
             prefix ? 'pl-10' : ''
           } ${suffix ? 'pr-10' : ''} ${
             error
-              ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-200'
+              ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200'
               : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-200'
           } ${className}`}
           aria-invalid={Boolean(error)}
@@ -71,4 +72,6 @@ export const Input: React.FC<InputProps> = ({
       ) : null}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';

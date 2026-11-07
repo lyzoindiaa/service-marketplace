@@ -15,9 +15,11 @@ export const AdminOffersManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tabFilter, setTabFilter] = useState<'all' | 'date_range' | 'single_day_slot'>('all');
 
-  const loadAdminOffers = useCallback(async () => {
+  const loadAdminOffers = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const list = await fetchAdminOffers({
         scheduleType: tabFilter !== 'all' ? tabFilter : undefined,
       });
@@ -25,7 +27,9 @@ export const AdminOffersManager: React.FC = () => {
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load offers', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [tabFilter, addToast]);
 
@@ -37,7 +41,7 @@ export const AdminOffersManager: React.FC = () => {
     try {
       await deleteSellerOffer(offerId);
       addToast('Offer removed by Admin', 'success');
-      await loadAdminOffers();
+      await loadAdminOffers(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to remove offer', 'error');
     }

@@ -4,45 +4,6 @@ import { Modal } from '../common/Modal';
 import { fetchCities, CityItem } from '../../services/discoveryService';
 import { useUiStore } from '../../store/uiStore';
 
-const FALLBACK_CITIES: CityItem[] = [
-  {
-    id: 'delhi',
-    slug: 'delhi',
-    nameEn: 'New Delhi',
-    nameHi: 'नई दिल्ली',
-    stateEn: 'Delhi NCR',
-    stateHi: 'दिल्ली एनसीआर',
-    isLive: true,
-  },
-  {
-    id: 'mumbai',
-    slug: 'mumbai',
-    nameEn: 'Mumbai',
-    nameHi: 'मुंबई',
-    stateEn: 'Maharashtra',
-    stateHi: 'महाराष्ट्र',
-    isLive: true,
-  },
-  {
-    id: 'bengaluru',
-    slug: 'bengaluru',
-    nameEn: 'Bengaluru',
-    nameHi: 'बेंगलुरु',
-    stateEn: 'Karnataka',
-    stateHi: 'कर्नाटक',
-    isLive: true,
-  },
-  {
-    id: 'lucknow',
-    slug: 'lucknow',
-    nameEn: 'Lucknow',
-    nameHi: 'लखनऊ',
-    stateEn: 'Uttar Pradesh',
-    stateHi: 'उत्तर प्रदेश',
-    isLive: true,
-  },
-];
-
 export const LocationSelectorModal: React.FC = () => {
   const {
     cityModalOpen,
@@ -52,20 +13,22 @@ export const LocationSelectorModal: React.FC = () => {
     language,
     addToast,
   } = useUiStore();
-  const [cities, setCities] = useState<CityItem[]>(FALLBACK_CITIES);
+  const [cities, setCities] = useState<CityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!cityModalOpen) return;
+    setIsLoading(true);
     fetchCities()
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const filtered = data.filter((c) => c.slug?.toLowerCase() !== 'ara');
-          if (filtered.length > 0) {
-            setCities(filtered);
-          }
+        if (Array.isArray(data)) {
+          setCities(data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [cityModalOpen]);
 
   // Group cities by State
@@ -163,56 +126,62 @@ export const LocationSelectorModal: React.FC = () => {
           </span>
         </button>
 
-        <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-          {Object.entries(groupedByState).map(([stateLabel, stateCities]) => (
-            <div key={stateLabel} className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <MapPin className="w-3.5 h-3.5 text-indigo-500" />
-                <span>{stateLabel}</span>
+        {isLoading && cities.length === 0 ? (
+          <div className="py-8 flex justify-center items-center text-slate-400 text-xs">
+            <span className="animate-pulse">{language === 'hi' ? 'शहर लोड हो रहे हैं...' : 'Loading cities...'}</span>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+            {Object.entries(groupedByState).map(([stateLabel, stateCities]) => (
+              <div key={stateLabel} className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>{stateLabel}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {stateCities.map((city) => {
+                    const isSelected = selectedCity.toLowerCase() === city.slug.toLowerCase();
+                    const displayName =
+                      language === 'hi' ? city.nameHi || city.nameEn : city.nameEn;
+
+                    return (
+                      <button
+                        key={city.slug}
+                        type="button"
+                        onClick={() => handleSelectCity(city)}
+                        className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between ${
+                          isSelected
+                            ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
+                            : city.isLive
+                            ? 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 bg-white'
+                            : 'border-slate-100 bg-slate-50/60 opacity-75 cursor-not-allowed'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-bold text-sm text-slate-900">{displayName}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">{stateLabel}</div>
+                        </div>
+
+                        {city.isLive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{isSelected ? (language === 'hi' ? 'चयनित' : 'Active') : 'Live'}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Clock className="w-3 h-3" />
+                            <span>{language === 'hi' ? 'जल्द आ रहा है' : 'Soon'}</span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {stateCities.map((city) => {
-                  const isSelected = selectedCity.toLowerCase() === city.slug.toLowerCase();
-                  const displayName =
-                    language === 'hi' ? city.nameHi || city.nameEn : city.nameEn;
-
-                  return (
-                    <button
-                      key={city.slug}
-                      type="button"
-                      onClick={() => handleSelectCity(city)}
-                      className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between ${
-                        isSelected
-                          ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
-                          : city.isLive
-                          ? 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 bg-white'
-                          : 'border-slate-100 bg-slate-50/60 opacity-75 cursor-not-allowed'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-bold text-sm text-slate-900">{displayName}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">{stateLabel}</div>
-                      </div>
-
-                      {city.isLive ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>{isSelected ? (language === 'hi' ? 'चयनित' : 'Active') : 'Live'}</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                          <Clock className="w-3 h-3" />
-                          <span>{language === 'hi' ? 'जल्द आ रहा है' : 'Soon'}</span>
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </Modal>
   );

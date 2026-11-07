@@ -32,6 +32,21 @@ export const approveSeller = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+export const approveSellerWithCategory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { action, categoryData, targetCategorySlug } = req.body;
+    const updated = await adminService.approveSellerWithCategory(id, {
+      action,
+      categoryData,
+      targetCategorySlug,
+    });
+    sendSuccess(res, updated, 'Seller approved and category processed successfully');
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to approve seller with category', error.statusCode || 500);
+  }
+};
+
 export const rejectSeller = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -68,7 +83,13 @@ export const suspendUser = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const updated = await adminService.suspendUser(id, shouldSuspend);
+    const currentUserId = req.user?.userId;
+    if (currentUserId && currentUserId.toString() === id.toString() && shouldSuspend) {
+      sendError(res, 'Administrators cannot suspend their own account', 400);
+      return;
+    }
+
+    const updated = await adminService.suspendUser(id, shouldSuspend, currentUserId);
     sendSuccess(res, updated, `User ${shouldSuspend ? 'suspended' : 're-activated'} successfully`);
   } catch (error: any) {
     sendError(res, error.message || 'Failed to update user suspension status', error.statusCode || 500);

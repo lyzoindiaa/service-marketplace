@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { BookOpen, Plus, Edit3, Trash2, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Plus, X, Edit3, Trash2, Eye, EyeOff } from 'lucide-react';
 import {
   fetchBlogs,
   createBlog,
@@ -30,15 +30,19 @@ export const AdminBlogsManager: React.FC = () => {
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isPublished, setIsPublished] = useState(true);
 
-  const loadBlogs = useCallback(async () => {
+  const loadBlogs = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const res = await fetchBlogs({ page: 1, limit: 50, includeDrafts: true });
       setBlogs(res.blogs || []);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to load blogs', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [addToast]);
 
@@ -107,7 +111,7 @@ export const AdminBlogsManager: React.FC = () => {
         addToast('Blog post created and published!', 'success');
       }
       resetForm();
-      await loadBlogs();
+      await loadBlogs(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to save blog post', 'error');
     } finally {
@@ -122,7 +126,7 @@ export const AdminBlogsManager: React.FC = () => {
         !blog.isPublished ? 'Blog post published' : 'Blog post moved to drafts',
         'success'
       );
-      await loadBlogs();
+      await loadBlogs(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to update blog status', 'error');
     }
@@ -132,7 +136,7 @@ export const AdminBlogsManager: React.FC = () => {
     try {
       await deleteBlog(blogId);
       addToast('Blog post deleted', 'success');
-      await loadBlogs();
+      await loadBlogs(true);
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Failed to delete blog post', 'error');
     }
@@ -159,7 +163,9 @@ export const AdminBlogsManager: React.FC = () => {
           </p>
         </div>
         <Button
-          size="sm"
+          size="md"
+          variant={showForm ? 'outline' : 'primary'}
+          className="w-40 min-w-[160px]"
           onClick={() => {
             if (showForm) {
               resetForm();
@@ -168,8 +174,17 @@ export const AdminBlogsManager: React.FC = () => {
             }
           }}
         >
-          <Plus className="w-4 h-4 mr-1" />
-          {showForm ? 'Close Editor' : 'New Blog Post'}
+          {showForm ? (
+            <>
+              <X className="w-4 h-4 mr-1.5" />
+              <span>Close Editor</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-1.5" />
+              <span>Add Blog Post</span>
+            </>
+          )}
         </Button>
       </div>
 
@@ -292,11 +307,23 @@ export const AdminBlogsManager: React.FC = () => {
             </label>
 
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={resetForm}>
-                Cancel
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                className="w-40 min-w-[160px]"
+                onClick={resetForm}
+              >
+                Close
               </Button>
-              <Button type="submit" size="sm" isLoading={submitting}>
-                {editingBlog ? 'Update Blog' : 'Publish Blog'}
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                className="w-40 min-w-[160px]"
+                isLoading={submitting}
+              >
+                {editingBlog ? 'Update Blog' : 'Add Blog Post'}
               </Button>
             </div>
           </div>

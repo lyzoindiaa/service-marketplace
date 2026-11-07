@@ -5,6 +5,7 @@ export interface CodeInputProps {
   onChange: (value: string) => void;
   length?: number;
   disabled?: boolean;
+  hasError?: boolean;
 }
 
 export const CodeInput: React.FC<CodeInputProps> = ({
@@ -12,6 +13,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
   onChange,
   length = 6,
   disabled = false,
+  hasError = false,
 }) => {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -60,6 +62,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
       {Array.from({ length }).map((_, idx) => (
         <input
           key={idx}
+          id={idx === 0 ? 'auth-otp-input-0' : undefined}
           ref={(el) => (inputsRef.current[idx] = el)}
           type="text"
           inputMode="numeric"
@@ -69,7 +72,11 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           disabled={disabled}
           onChange={(e) => handleInputChange(idx, e.target.value)}
           onKeyDown={(e) => handleKeyDown(idx, e)}
-          className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-xs"
+          className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl border bg-white focus:outline-none transition-colors shadow-xs ${
+            hasError
+              ? 'border-red-500 ring-1 ring-red-500 text-red-900 focus:border-red-600 focus:ring-red-200'
+              : 'border-slate-300 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
+          }`}
           aria-label={`Digit ${idx + 1}`}
         />
       ))}

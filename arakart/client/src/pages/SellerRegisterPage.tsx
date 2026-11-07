@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SellerRegisterWizard } from '../components/seller/SellerRegisterWizard';
+import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 
 export const SellerRegisterPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   const { language } = useUiStore();
+
+  useEffect(() => {
+    if (user?.role === 'seller') {
+      navigate('/seller/dashboard', { replace: true });
+    } else if (user?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 lg:px-8">

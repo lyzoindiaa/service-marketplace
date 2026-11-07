@@ -9,13 +9,13 @@ import {
   uploadPhoto,
   deletePhoto,
 } from '../controllers/seller.controller';
-import { verifyToken, requireRole } from '../middleware/auth.middleware';
+import { verifyToken, optionalAuth, requireRole } from '../middleware/auth.middleware';
 import { uploadSinglePhoto } from '../middleware/upload.middleware';
 
 const router = Router();
 
-// Apply to become a seller (any authenticated user)
-router.post('/apply', verifyToken, applySeller);
+// Apply to become a seller (open to all applicants; creates or links account)
+router.post('/apply', optionalAuth, applySeller);
 
 // Seller profile & dashboard routes
 router.get('/me', verifyToken, requireRole('seller', 'admin'), getMyProfile);
