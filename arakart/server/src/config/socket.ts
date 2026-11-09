@@ -7,9 +7,11 @@ import { verifyAccessToken } from '../utils/jwt.utils';
 let io: SocketIOServer | null = null;
 
 export const initSocket = (server: HttpServer): SocketIOServer => {
+  const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+
   io = new SocketIOServer(server, {
     cors: {
-      origin: env.CORS_ORIGIN,
+      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       credentials: true,
     },
   });

@@ -6,7 +6,8 @@ let socket: Socket | null = null;
 export const getSocket = (): Socket => {
   if (!socket) {
     const accessToken = useAuthStore.getState().accessToken;
-    socket = io(window.location.origin, {
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    socket = io(socketUrl, {
       autoConnect: false,
       auth: { token: accessToken },
       transports: ['websocket', 'polling'],

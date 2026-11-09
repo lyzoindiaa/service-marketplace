@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: arakart-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: arakart/server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: SMS_PROVIDER
+        value: console
+      - key: EMAIL_PROVIDER
+        value: console
+      - key: CODE_DEV_ECHO
+        value: "false"
