@@ -1,0 +1,17 @@
+{
+  "name": "arakart-root-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "arakart/client",
+    "arakart/server"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@arakart/client",
+    "build:server": "npm run build --workspace=@arakart/server",
+    "build:all": "npm run build --workspace=@arakart/server && npm run build --workspace=@arakart/client"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4"
+  }
+}

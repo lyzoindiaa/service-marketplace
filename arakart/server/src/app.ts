@@ -44,7 +44,7 @@ if (env.NODE_ENV !== 'test') {
 app.use(globalLimiter);
 
 // Root health check
-app.get('/health', (_req, res) => {
+app.get(['/health', '/api/health'], (_req, res) => {
   sendSuccess(res, {
     status: 'ok',
     uptime: process.uptime(),
